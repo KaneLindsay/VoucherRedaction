@@ -1,9 +1,11 @@
+import pycountry
 import streamlit as st
 import yaml, os, json, random, time, re, torch, random, warnings, shutil, sys, glob
 import seaborn as sns
 import plotly.graph_objs as go
 from PIL import Image
 import pandas as pd
+from streamlit_tags import st_tags
 from io import BytesIO
 # from streamlit_extras.let_it_rain import rain
 from annotated_text import annotated_text
@@ -167,13 +169,20 @@ if 'cost_mistral' not in st.session_state:
 if 'cost_local' not in st.session_state:
     st.session_state['cost_local'] = None
 
-
 if 'settings_filename' not in st.session_state:
     st.session_state['settings_filename'] = None
 if 'loaded_settings_filename' not in st.session_state:
     st.session_state['loaded_settings_filename'] = None
 if 'zip_filepath' not in st.session_state:
     st.session_state['zip_filepath'] = None
+
+if 'redaction_config' not in st.session_state:
+    st.session_state.redaction_config = {
+        'enable_redaction_controls': False,
+        'enable_redaction': False,
+        'redaction_granularity': 'line',
+        'banned_words': [],
+    }
 
 
 ########################################################################################################
@@ -506,62 +515,6 @@ def refresh():
     st.write('')
 
 
-
-    
-
-# def display_image_gallery():
-#     # Initialize the container
-#     con_image = st.empty()
-    
-#     # Start the div for the image grid
-#     img_grid_html = """
-#     <div style='display: flex; flex-wrap: wrap; align-items: flex-start; overflow-y: auto; max-height: 400px; gap: 10px;'>
-#     """
-    
-#     # Loop through each image in the input list
-#     # with con_image.container():
-#     for image_path in st.session_state['input_list']:
-#         # Open the image and create a thumbnail
-#         img = Image.open(image_path)
-#         img.thumbnail((120, 120), Image.Resampling.LANCZOS)  
-
-#         # Convert the image to base64
-#         base64_image = image_to_base64(img)
-
-#         # Append the image to the grid HTML
-#         # img_html = f"""
-#         #     <div style='display: flex; flex-wrap: wrap; overflow-y: auto; max-height: 400px;'>
-#         #         <img src='data:image/jpeg;base64,{base64_image}' alt='Image' style='max-width: 100%; height: auto;'>
-#         #     </div>
-#         #     """
-#         img_html = f"""
-#                 <img src='data:image/jpeg;base64,{base64_image}' alt='Image' style='max-width: 100%; height: auto;'>
-#             """
-#         img_grid_html += img_html
-#         # st.markdown(img_html, unsafe_allow_html=True)
-
-    
-#     # Close the div for the image grid
-#     img_grid_html += "</div>"
-    
-#     # Display the image grid in the container
-#     with con_image.container():
-#         st.markdown(img_grid_html, unsafe_allow_html=True)
-
-#     # The CSS to make the images display inline and be responsive
-#     css = """
-#     <style>
-#         .scrollable-image-container img {
-#             max-width: 100%;
-#             height: auto;
-#         }
-#     </style>
-#     """
-#     # Apply the CSS
-#     st.markdown(css, unsafe_allow_html=True)
-########################################################################################################
-########################################################################################################
-########################################################################################################
 class ProgressReport:
     def __init__(self, overall_bar, batch_bar, text_overall, text_batch):
         self.overall_bar = overall_bar
@@ -747,11 +700,6 @@ class JSONReport:
         except:
             return json.dumps(json_obj, indent=4, sort_keys=False)
 
-    
-
-
-
-
 
 def setup_streamlit_config(dir_home):
     # Define the directory path and filename
@@ -882,57 +830,8 @@ def display_test_results(test_results, JSON_results, llm_version):
                 st.error(f"Test Failed")
             st.write('---')
     
-    # success_count = sum(1 for result in test_results.values() if result)
-    # failure_count = len(test_results) - success_count
-    # proportional_rain("🥇", success_count, "💔", failure_count, font_size=72, falling_speed=5, animation_length="infinite")
-    # rain_emojis(test_results)
-
-
-
 def add_emoji_delay():
     time.sleep(0.3)
-
-
-
-# def rain_emojis(test_results):
-#     # test_results = {
-#     #     'test1': True,   # Test passed
-#     #     'test2': True,   # Test passed
-#     #     'test3': True,   # Test passed
-#     #     'test4': False,  # Test failed
-#     #     'test5': False,  # Test failed
-#     #     'test6': False,  # Test failed
-#     #     'test7': False,  # Test failed
-#     #     'test8': False,  # Test failed
-#     #     'test9': False,  # Test failed
-#     #     'test10': False,  # Test failed
-#     # }
-#     success_emojis = ["🥇", "🏆", "🍾", "🙌"]
-#     failure_emojis = ["💔", "😭"]
-
-#     success_count = sum(1 for result in test_results.values() if result)
-#     failure_count = len(test_results) - success_count
-
-#     chosen_emoji = random.choice(success_emojis)
-#     for _ in range(success_count):
-#         rain(
-#             emoji=chosen_emoji,
-#             font_size=72,
-#             falling_speed=4,
-#             animation_length=2,
-#         )
-#         add_emoji_delay()
-
-#     chosen_emoji = random.choice(failure_emojis)
-#     for _ in range(failure_count):
-#         rain(
-#             emoji=chosen_emoji,
-#             font_size=72,
-#             falling_speed=5,
-#             animation_length=1,
-#         )
-#         add_emoji_delay()
-
 
 
 def format_json(json_obj):
@@ -940,15 +839,11 @@ def format_json(json_obj):
         return json.dumps(json.loads(json_obj), indent=4, sort_keys=False)
     except:
         return json.dumps(json_obj, indent=4, sort_keys=False)
-    
-
 
 def get_prompt_versions(LLM_version):
     yaml_files = [f for f in os.listdir(os.path.join(st.session_state.dir_home, 'custom_prompts')) if f.endswith('.yaml')]
 
     return yaml_files
-
-
 
 def get_private_file():
     dir_home = os.path.dirname(__file__)
@@ -964,6 +859,7 @@ def blog_text_and_image(text=None, fullpath=None, width=700):
 
 def blog_text(text_bold, text):
     st.markdown(f"- **{text_bold}**{text}")
+
 def blog_text_plain(text_bold, text):
     st.markdown(f"**{text_bold}** {text}")
 
@@ -1145,17 +1041,6 @@ def create_private_file():
                                                  placeholder = 'e.g. azure',
                                                  type='password')
 
-        # st.write("---")
-        # st.subheader("Google PaLM 2 (Deprecated)")
-        # st.write("Plea")
-        # st.markdown('Follow these [instructions](https://developers.generativeai.google/tutorials/setup) to generate an API key for PaLM 2. You may need to also activate an account with [MakerSuite](https://makersuite.google.com/app/apikey) and enable "early access." If this is deprecated, then use the full Google API instructions above.')
-
-        # google_palm = st.text_input("Google PaLM 2 API Key", cfg_private['google'].get('GOOGLE_PALM_API', ''),
-        #                                          help='The MakerSuite API key e.g. a 32-character string',
-        #                                          placeholder='e.g. SATgthsykuE64FgrrrrEervr3S4455t_geyDeGq',
-        #                                          type='password')
-
-
         st.write("---")
         st.subheader("MistralAI")
         st.markdown('Follow these [instructions](https://console.mistral.ai/) to generate an API key for MistralAI.')
@@ -1221,17 +1106,9 @@ def save_changes_to_API_keys(cfg_private,
 
     cfg_private['here']['APP_ID'] = here_APP_ID
     cfg_private['here']['API_KEY'] = here_API_KEY
-    # Call the function to write the updated configuration to the YAML file
+
     write_config_file(cfg_private, st.session_state.dir_home, filename="PRIVATE_DATA.yaml")
     st.success(f"API Keys saved to {os.path.join(st.session_state.dir_home, 'PRIVATE_DATA.yaml')}")
-    # st.session_state.private_file = does_private_file_exist()
-
-# Function to load a YAML file and update session_state
-
-
-### Updated to match HF version
-# def save_prompt_yaml(filename):
-
 
 
 @st.cache_data
@@ -1253,16 +1130,6 @@ def determine_n_images():
     except Exception as e:
         print(e)
         return None
-# def determine_n_images():
-#     try:
-#         # Check if 'dir_uploaded_images' key exists and it is not empty
-#         if 'dir_uploaded_images' in st and st['dir_uploaded_images']:
-#             dir_path = st['dir_uploaded_images']  # This would be the path to the directory
-#             return len([f for f in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, f))])
-#         else:
-#             return None
-#     except:
-#         return None
 
 def save_api_status(present_keys, missing_keys, date_of_check):
     with open(os.path.join(st.session_state.dir_home,'api_status.yaml'), 'w') as file:
@@ -1309,13 +1176,7 @@ def display_api_key_status(ccol):
             st.session_state['model_annotations'] = model_annotations
             st.session_state['date_of_check'] = date_of_check
             st.session_state['API_checked'] = True
-            # print('for')
-            # print(st.session_state['present_annotations'])
-            # print(st.session_state['missing_annotations'])
     else:
-        # print('else')
-        # print(st.session_state['present_annotations'])
-        # print(st.session_state['missing_annotations'])
         pass
 
     # Check if the API status has already been retrieved
@@ -1340,10 +1201,6 @@ def display_api_key_status(ccol):
         
         if 'model_annotations' in st.session_state and st.session_state['model_annotations']:
             annotated_text(*st.session_state['model_annotations'])
-
-    
-    
-
 
 def check_api_key_status():
     try:
@@ -1389,7 +1246,6 @@ def check_api_key_status():
     st.session_state['missing_annotations'] = missing_annotations
     st.session_state['model_annotations'] = model_annotations
     st.session_state['date_of_check'] = date_of_check
-    
 
 def convert_cost_dict_to_table(cost, name):
     # Convert the dictionary to a pandas DataFrame for nicer display
@@ -1437,7 +1293,6 @@ def get_all_cost_tables():
     styled_cost_local = convert_cost_dict_to_table(cost_local, "Local Models")
 
     return cost_openai, styled_cost_openai, cost_azure, styled_cost_azure, cost_google, styled_cost_google, cost_mistral, styled_cost_mistral, cost_local, styled_cost_local
-
 
 def content_header():
     col_logo, col_run_1, col_run_2, col_run_3, col_run_4 = st.columns([2,2,2,2,4])
@@ -1501,7 +1356,10 @@ def content_header():
                                                     st.session_state['json_report'],
                                                     path_api_cost=os.path.join(st.session_state.dir_home,'api_cost','api_cost.yaml'),
                                                     is_hf = st.session_state['is_hf'], 
-                                                    is_real_run=True)
+                                                    is_real_run=True,
+                                                    banned_words=st.session_state['redaction_config']['banned_words'],
+                                                    redaction_granularity=st.session_state['redaction_config']['redaction_granularity'])
+                
                 st.session_state['formatted_json'] = voucher_vision_output['last_JSON_response']
                 st.session_state['formatted_json_WFO'] = voucher_vision_output['final_WFO_record']
                 st.session_state['formatted_json_GEO'] = voucher_vision_output['final_GEO_record']
@@ -1509,11 +1367,6 @@ def content_header():
                 n_failed_OCR = voucher_vision_output['n_failed_OCR']
                 n_failed_LLM_calls = voucher_vision_output['n_failed_LLM_calls']
                 st.session_state['zip_filepath'] = voucher_vision_output['zip_filepath']
-                # st.balloons()
-
-                # except Exception as e:
-                #     with col_run_4:
-                #         st.error(f"Transcription failed. Error: {e}")
 
                 if n_failed_OCR > 0:
                     with col_run_4:
@@ -1555,24 +1408,6 @@ def content_header():
         except:
             st.page_link(os.path.join(os.path.dirname(__file__),"pages","faqs.py"), label="FAQs", icon="❔")
 
-      
-
-    # with col_run_2:
-    #     if st.button("Test GPT"):
-    #         progress_report.set_n_overall(TestOptionsGPT.get_length())
-    #         test_results, JSON_results = run_demo_tests_GPT(progress_report)
-    #         with col_test:
-    #             display_test_results(test_results, JSON_results, 'gpt')
-    #         st.balloons()
-
-    #     if st.button("Test PaLM2"):
-    #         progress_report.set_n_overall(TestOptionsPalm.get_length())
-    #         test_results, JSON_results = run_demo_tests_Palm(progress_report)
-    #         with col_test:
-    #             display_test_results(test_results, JSON_results, 'palm')
-    #         st.balloons()
-
-
     with col_run_2:
         if st.button('Save Current Settings',use_container_width=True):
             if st.session_state.settings_filename:
@@ -1587,8 +1422,6 @@ def content_header():
                     # st.session_state.config
     with col_run_3:
         st.session_state['settings_filename'] = st.text_input('Setting File Name',placeholder="Settings fileame",label_visibility='collapsed',value=None)
-
-
 
     with col_run_2:
         if st.button('Load Settings',use_container_width=True):
@@ -1606,7 +1439,6 @@ def content_header():
                 with col_run_4:
                     st.warning(f'Filename not selected')
 
-
     with col_run_3:
         st.session_state['settings_choice_null'] = 'Select previous settings...'
         st.session_state['dir_settings'] = os.path.join(st.session_state.dir_home, 'settings')
@@ -1614,7 +1446,6 @@ def content_header():
         settings_choice = st.selectbox('Load Previous Settings', all_settings_files,label_visibility='collapsed')
         if settings_choice != st.session_state['settings_choice_null']:
             st.session_state['loaded_settings_filename'] = settings_choice            
-        
 
     with col_run_2:
         if st.button("Check GPU Status",use_container_width=True):
@@ -1630,8 +1461,6 @@ def content_header():
                     for message in info:
                         st.warning(message)
 
-
-
 def content_project_settings(col):
          ### Project
     with col:
@@ -1641,7 +1470,6 @@ def content_project_settings(col):
 
         if not st.session_state.is_hf:
             st.session_state.config['leafmachine']['project']['dir_output'] = st.text_input("Output directory", st.session_state.config['leafmachine']['project'].get('dir_output', ''))
-        
 
 def content_tools():
     st.write("---")
@@ -1737,9 +1565,6 @@ def content_llm_cost():
     with col_cost_5:
         show_cost_matrix_5(rounding)
 
-
-
-
 def content_prompt_and_llm_version():
     st.info("Note: The default settings may not work for your particular image. If VoucherVision does not produce the results that you were expecting: 1) try disabling the LM2 collage 2) Then try enabling 2 copies of OCR, SLTPvB_long prompt, Azure GPT 4. We are currently building 'recipes' for different scenarios, please stay tuned!")
     st.warning("UPDATE :bell: May 25, 2024 - The default LLM used to be Azure GPT-3.5, which was served by the University of Michigan. However, UofM has sunset all but GPT-4 Turbo so that is now the default LLM. If you ran VV prior to this update and saw an empty result, that was the reason.")
@@ -1801,10 +1626,7 @@ def content_prompt_and_llm_version():
         # Update the session state with the selected model
         st.session_state.config['leafmachine']['LLM_version'] = selected_model
 
-
-
-    
-        
+    with st.expander("Model Information"):
         st.markdown("""
 Based on preliminary results, the following models perform the best. We are currently running tests of all possible OCR + LLM + Prompt combinations to create recipes for different workflows.
 - Any Mistral model e.g., `Mistral Large`          
@@ -1819,7 +1641,6 @@ Larger models (e.g., `GPT 4`, `Gemini Pro`) do not necessarily perform better fo
 The `SLTPvA_short.yaml` prompt also seems to work better with smaller LLMs (e.g., Mistral Tiny). Alternatively, enable double OCR to help the LLM focus on the OCR text given a longer prompt.
                     
 Models `GPT 3.5 Turbo` and `GPT 4 Turbo 0125-preview` enable OpenAI's [JSON mode](https://platform.openai.com/docs/guides/text-generation/json-mode), which helps prevent JSON errors. All models implement Langchain JSON parsing too, so JSON errors are rare for most models.""")
-
 
 def content_api_check():
     # In your Streamlit layout
@@ -1845,8 +1666,6 @@ def content_api_check():
                 st.session_state.proceed_to_private = True
                 st.rerun()
                 
-
-
 def adjust_ocr_options_based_on_capability(capability_score, model_name='llava'):
     if model_name == 'llava':
         llava_models_requirements = {
@@ -1885,8 +1704,6 @@ def adjust_ocr_options_based_on_capability(capability_score, model_name='llava')
                 return False  # Indicate model is not supported
             return True  # Indicate model is supported
 
-
-
 def content_ocr_method():
     st.write("---")
     st.header('OCR Methods')   
@@ -1915,24 +1732,6 @@ def content_ocr_method():
                     to the `trOCR` transformer model. This pairing requires at least an 8 GB GPU. trOCR is a Microsoft model optimized for handwriting. The base model is not as accurate as 
                     LLaVA or Google Vision, but if you have a trOCR-based model, let us know and we will add support.""")
 
-    c1, c2 = st.columns([4,4])   
-
-    with c2:
-        st.subheader("Local Methods")
-        st.write("Local methods are free, but require a capable GPU. ")
-        # Check if LLaVA models are supported based on capability score
-        llava_supported = adjust_ocr_options_based_on_capability(st.session_state.capability_score, model_name='llava')
-        florence_supported = adjust_ocr_options_based_on_capability(st.session_state.capability_score, model_name='florence-2')
-
-        if llava_supported:
-            st.success("LLaVA models are supported on this computer. A GPU with at least 12 GB of VRAM is available.")
-        else:
-            st.warning("LLaVA models are NOT supported on this computer. Requires a GPU with at least 12 GB of VRAM.")
-
-        if llava_supported:
-            st.success("Florence-2 models are supported on this computer. A GPU with at least 12 GB of VRAM is available.")
-        else:
-            st.warning("Florence-2 models are NOT supported on this computer. Requires a GPU with at least 12 GB of VRAM.")
 
     demo_text_h = f"Google_OCR_Handwriting:\nHERBARIUM OF MARCUS W. LYON , JR . Tracaulon sagittatum Indiana : Porter Co. incal Springs edge wet subdunal woods 1927 TX 11 Ilowers pink UNIVERSITE HERBARIUM MICH University of Michigan Herbarium 1439649 copyright reserved PERSICARIA FEB 2 6 1965 cm "
     demo_text_tr = f"trOCR:\nherbarium of marcus w. lyon jr. : : : tracaulon sagittatum indiana porter co. incal springs TX 11 Ilowers pink  1439649 copyright reserved D H U Q "
@@ -1963,6 +1762,12 @@ def content_ocr_method():
     default_index = 0  # Default to 0 if option not found
     default_index_llava = 0  # Default to 0 if option not found
     default_index_llava_bit = 0
+
+    default_banned_words = ["latitude","longitude","lat","long","altitude","alt","elevation","elev","locality","location","site","habitat",]
+    default_banned_words.extend([country.name.lower() for country in pycountry.countries])
+
+    c1, c2 = st.columns(2)   
+
     with c1:
         st.subheader("API Methods (Google Vision)")
         st.write("Using APIs for OCR allows VoucherVision to run on most computers. You can use multiple OCR engines simultaneously.")
@@ -1971,13 +1776,6 @@ def content_ocr_method():
                                                                                       help="This can help the LLMs focus attention on the OCR and not get lost in the longer instruction text",
                                                                                       value=double_OCR)
 
-        # Create the radio button
-        # OCR_option_select = st.radio(
-        #     "Select the OCR Method",
-        #     options,
-        #     index=default_index,
-        #     help="",captions=captions,
-        # )
         default_values = [options[default_index]]
         OCR_option_select = st.multiselect(
             "Select the OCR Method(s)",
@@ -1985,7 +1783,6 @@ def content_ocr_method():
             default=default_values,
             help="Select one or more OCR methods."
         )
-        # st.session_state.config['leafmachine']['project']['OCR_option'] = OCR_option_select
 
         # Handling multiple selections (Example logic)
         OCR_options = {
@@ -2003,9 +1800,47 @@ def content_ocr_method():
         # Assuming you need to use these mapped values elsewhere in your application
         st.session_state.config['leafmachine']['project']['OCR_option'] = selected_OCR_options
 
+        llava_supported = adjust_ocr_options_based_on_capability(st.session_state.capability_score, model_name='llava')
+        florence_supported = adjust_ocr_options_based_on_capability(st.session_state.capability_score, model_name='florence-2')
 
+        st.subheader("Supported Local Methods")
 
+        if llava_supported:
+            st.success("LLAVA models supported (>=12 GB of VRAM)")
+        else:
+            st.warning("LLAVA models NOT supported (<12 GB of VRAM)")
+
+        if florence_supported:
+            st.success("Florence-2 models supported (>=12 GB of VRAM)")
+        else:
+            st.warning("Florence-2 NOT supported (<12 GB of VRAM)")        
+
+    def redaction_controls():
+        st.subheader("Location Redaction")
+        st.write("Image locational content redaction is available for Google Vision OCR using fine-tuned RoBERTa for sequence classification.")
+        # Grey out the redaction option if a google OCR option is not selected
+        if 'hand' not in selected_OCR_options and 'normal' not in selected_OCR_options:
+            # Disable redaction controls
+            st.session_state.redaction_config['enable_redaction_controls'] = False
+            st.warning("Redaction is only available for Google Vision OCR. Please select Google Vision OCR to enable redaction.")
+        else:
+            # Enable redaction controls
+            st.session_state.redaction_config['enable_redaction_controls'] = True
         
+        st.session_state.redaction_config['enable_redaction'] = st.checkbox("Enable Redaction", value=False, key="Enable Redaction", disabled=not(st.session_state.redaction_config['enable_redaction_controls']))
+
+    with c2:
+        with st.container():
+            redaction_controls()
+            st.session_state.redaction_config['redaction_granularity'] = st.select_slider("Redaction Granularity", options=["word", "line", "paragraph", "block"], value="line", disabled=not(st.session_state.redaction_config['enable_redaction_controls']))
+        with st.container():
+            st.subheader("Banned Word Manager")
+            with st.container(height=200):
+                st.write("Add or remove banned words used in redaction in addition to the classifier model.")
+                st.session_state.redaction_config['banned_words'] = st_tags(label="",
+                                                                            text='Type banned word and press enter',
+                                                                            value=default_banned_words,
+                                                                            key='banned_words')
     if 'CRAFT' in selected_OCR_options:
         st.subheader('Options for :blue[CRAFT + trOCR]')
         st.write("Supplement Google Vision OCR with :blue[trOCR] (handwriting OCR) using `microsoft/trocr-base-handwritten`. This option requires Google Vision API and a GPU.")
@@ -2016,7 +1851,6 @@ def content_ocr_method():
             st.session_state.config['leafmachine']['project']['do_use_trOCR'] = do_use_trOCR
 
         if do_use_trOCR:
-            # st.session_state.config['leafmachine']['project']['trOCR_model_path'] = "microsoft/trocr-large-handwritten"
             default_trOCR_model_path = st.session_state.config['leafmachine']['project']['trOCR_model_path']
             user_input_trOCR_model_path = st.text_input(":blue[trOCR] Hugging Face model path. MUST be a fine-tuned version of 'microsoft/trocr-base-handwritten' or 'microsoft/trocr-large-handwritten', or a microsoft :blue[trOCR] model.", value=default_trOCR_model_path)
             if st.session_state.config['leafmachine']['project']['trOCR_model_path'] != user_input_trOCR_model_path:
@@ -2045,7 +1879,6 @@ def content_ocr_method():
             ["high", "low", ],
             captions=["$0.50 per 1,000", "\$5 - \$10 per 1,000"])
 
-
     if 'LLaVA' in selected_OCR_options:
         st.subheader('Options for :red[LLaVA]')
         OCR_option_llava = st.radio(
@@ -2065,21 +1898,6 @@ def content_ocr_method():
         st.session_state.config['leafmachine']['project']['OCR_option_llava_bit'] = OCR_option_llava_bit
     st.write('---')
     
-    
-
-    # st.markdown("Below is an example of what the LLM would see given the choice of OCR ensemble. One, two, or three version of OCR can be fed into the LLM prompt. Typically, 'printed + handwritten' works well. If you have a GPU then you can enable trOCR.")
-    # if (OCR_option == 'hand') and not do_use_trOCR:
-    #     st.text_area(label='Handwritten/Printed',placeholder=demo_text_h,disabled=True, label_visibility='visible', height=150)
-    # elif (OCR_option == 'normal') and not do_use_trOCR:
-    #     st.text_area(label='Printed',placeholder=demo_text_p,disabled=True, label_visibility='visible', height=150)
-    # elif (OCR_option == 'both') and not do_use_trOCR:
-    #     st.text_area(label='Handwritten/Printed + Printed',placeholder=demo_text_b,disabled=True, label_visibility='visible', height=150)
-    # elif (OCR_option == 'both') and do_use_trOCR:
-    #     st.text_area(label='Handwritten/Printed + Printed + trOCR',placeholder=demo_text_trb,disabled=True, label_visibility='visible', height=150)
-    # elif (OCR_option == 'normal') and do_use_trOCR:
-    #     st.text_area(label='Printed + trOCR',placeholder=demo_text_trp,disabled=True, label_visibility='visible', height=150)
-    # elif (OCR_option == 'hand') and do_use_trOCR:
-    #     st.text_area(label='Handwritten/Printed + trOCR',placeholder=demo_text_trh,disabled=True, label_visibility='visible', height=150)
 
 def is_valid_huggingface_model_path(model_path):
     from transformers import AutoConfig
@@ -2115,9 +1933,6 @@ def show_ocr():
 
 def content_collage_overlay():
     col_collage, col_overlay = st.columns([4,4])   
-    
-    
-
     with col_collage:
         st.header('LeafMachine2 Label Collage')    
         st.info("NOTE: We strongly recommend enabling LeafMachine2 cropping if your images are full sized herbarium sheet. Often, the OCR algorithm struggles with full sheets, but works well with the collage images. We have disabled the collage by default for this Hugging Face Space because the Space lacks a GPU and the collage creation takes a bit longer.")
@@ -2146,9 +1961,6 @@ def content_collage_overlay():
         st.session_state.config['leafmachine']['do_create_OCR_helper_image'] = do_create_OCR_helper_image
         show_ocr()
         
-
-
-
 def content_archival_components():
     st.write("---")
     st.header('Archival Components')
@@ -2175,8 +1987,6 @@ def content_archival_components():
         st.session_state.config['leafmachine']['archival_component_detector']['detector_version'] = 'PREP_final'
         st.session_state.config['leafmachine']['archival_component_detector']['detector_iteration'] = 'PREP_final'
         st.session_state.config['leafmachine']['archival_component_detector']['detector_weights'] = 'best.pt'
-
-
 
 def content_processing_options():
     st.write("---")
@@ -2221,13 +2031,6 @@ def content_processing_options():
             st.session_state.config['leafmachine']['logging']['log_level'] = selected_log_level
 
     with col_v2:
-        
-
-        # print(f"Number of GPUs: {st.session_state.num_gpus}")
-        # print(f"GPU Details: {st.session_state.gpu_dict}")
-        # print(f"Total VRAM: {st.session_state.total_vram_gb} GB")
-        # print(f"Capability Score: {st.session_state.capability_score}")
-
         st.header('System GPU Information')
         st.markdown(f"**Torch CUDA:** {torch.cuda.is_available()}")
         st.markdown(f"**Number of GPUs:** {st.session_state.num_gpus}")
@@ -2241,7 +2044,6 @@ def content_processing_options():
             st.markdown(f"**Capability Score:** {st.session_state.capability_score}")
         else:
             st.warning("No GPUs detected in the system.")
-
 
 
 def content_tab_domain():
@@ -2279,7 +2081,6 @@ def content_tab_domain():
             st.session_state.config['leafmachine']['project']['path_to_domain_knowledge_xlsx'] = st.text_input("Path to domain knowledge CSV file (will be used to create new embeddings database)", st.session_state.config['leafmachine']['project'].get('path_to_domain_knowledge_xlsx', ''), disabled=True)
 
 
-
 def content_space_saver():
     st.write("---")
     st.subheader("Space Saving Options")
@@ -2297,7 +2098,6 @@ def content_space_saver():
     with col_ss_2:
         st.session_state.config['leafmachine']['project']['delete_temps_keep_VVE'] = st.checkbox("Delete Temporary Files (KEEP files required for VoucherVisionEditor)", st.session_state.config['leafmachine']['project'].get('delete_temps_keep_VVE', False))
         st.session_state.config['leafmachine']['project']['delete_all_temps'] = st.checkbox("Keep only the final transcription file", st.session_state.config['leafmachine']['project'].get('delete_all_temps', False),help="*WARNING:* This limits your ability to do quality assurance. This will delete all folders created by VoucherVision, leaving only the `transcription.xlsx` file.")
-
 
 
 #################################################################################################################################################

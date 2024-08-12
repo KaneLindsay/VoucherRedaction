@@ -11,10 +11,10 @@ from langchain_huggingface import HuggingFacePipeline
 from vouchervision.utils_LLM import SystemLoadMonitor, run_tools, count_tokens, save_individual_prompt, sanitize_prompt
 from vouchervision.utils_LLM_JSON_validation import validate_and_align_JSON_keys_with_template
 
-'''
+"""
 Local Pipielines:
 https://python.langchain.com/docs/integrations/llms/huggingface_pipelines
-'''
+"""
 
 class LocalMistralHandler:
     RETRY_DELAY = 2  # Wait 2 seconds before retrying

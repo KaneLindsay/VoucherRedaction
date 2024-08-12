@@ -8,7 +8,7 @@ from chromadb.config import Settings
 from chromadb.utils import embedding_functions
 from InstructorEmbedding import INSTRUCTOR
 from langchain_community.vectorstores import Chroma
-''' 
+""" 
 If there is a transformers install error:
 pip install transformers==4.29.2
 Python 3.8 and above will need to upgrade the transformers to 4.2x.xx
@@ -23,12 +23,12 @@ Once the closest row is found, I use the id to go back to the xlsx and take the 
 it into a dictionary similar to the desired output from the LLM.
 
 This dict is then added to the prompt as a hint for the LLM. 
-'''
+"""
 
-'''
+"""
 pip uninstall protobuf
 pip install protobuf==3.19.5 
-'''
+"""
 class VoucherVisionEmbedding:
     # def __init__(self, db_name, path_domain_knowledge, logger, build_new_db=False, model_name="hkunlp/instructor-xl", device="cuda"):
     #     DB_DIR = os.path.join(os.path.dirname(__file__), db_name)

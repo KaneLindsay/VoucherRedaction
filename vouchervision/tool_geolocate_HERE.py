@@ -141,7 +141,7 @@ def validate_coordinates_here(tool_GEO, record, replace_if_success_geo=False):
         query_reverse_verbatim = record.get('verbatimCoordinates', '').strip()
         
 
-        '''
+        """
         #For testing
         # query_forward = 'Ann bor, michign'
         query_forward = 'michigan'
@@ -153,7 +153,7 @@ def validate_coordinates_here(tool_GEO, record, replace_if_success_geo=False):
         # params = {
         #     'q': query_loc,
         #     'apiKey': os.environ['HERE_API_KEY'],
-        # }'''
+        # }"""
 
         
         params_rev = {

@@ -230,3 +230,12 @@ dmypy.json
 # Pyre type checker
 .pyre/
 VoucherVision.yaml
+
+out
+api_cost
+api_cost/*
+.streamlit
+bin/*
+expense_report
+
+PRIVATE_DATA

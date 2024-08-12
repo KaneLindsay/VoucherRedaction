@@ -7,7 +7,7 @@ sys.path.append(currentdir)
 from utils_GBIF import download_all_images_in_images_csv, get_cfg_from_full_path, download_all_images_in_images_csv_multiDirs
 
 
-'''
+"""
 This script attempts to download all images (every row) that are in the provided images.csv file.
 This means that you have either pruned an images.csv file or that you wish to download every possible image.
 
@@ -25,7 +25,7 @@ There are different scripts in the LeafMachine2/leafmachine2/machine folder to d
     1) non-GBIF sources i.e. SEINet, SERNEC
     2) provide a list of species/genera/families and retrive all available images from GBIF 
     3) provide a list of species/genera/families and retrive a custom set of images that are available on GBIF
-'''
+"""
 def download_all_images_from_GBIF_LM2(dir_LM2, mode):
     dir_current_config = os.path.join(dir_LM2,'configs')
     if mode in ['all','All','ALL','a','A']:

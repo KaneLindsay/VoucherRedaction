@@ -13,11 +13,11 @@ def create_mac_shortcut(script_path, venv_path, app_name, app_dir, icon_path):
     print(f"Command: {command}")
 
     # AppleScript to run the command in Terminal
-    apple_script = f'''
+    apple_script = f"""
     tell application "Terminal"
         do script "{command}"
     end tell
-    '''
+    """
 
     # Path to save the AppleScript
     apple_script_path = os.path.join(app_dir, f"{app_name}.applescript")

@@ -13,6 +13,9 @@ from PIL import Image
 from tqdm import tqdm
 from pathlib import Path
 import fitz
+from logging import Logger
+from vouchervision.directory_structure_VV import Dir_Structure
+
 
 def convert_pdf_to_jpg(source_pdf, destination_dir, dpi=100):
     doc = fitz.open(source_pdf)
@@ -26,17 +29,13 @@ def convert_pdf_to_jpg(source_pdf, destination_dir, dpi=100):
     doc.close()
     return length_doc
 
+
 @dataclass
 class Project_Info():
     batch_size: int = 50
-
+    has_valid_images: bool = True
     image_location: str = ''
-
     dir_images: str = ''
-
-    project_data: object = field(init=False)
-    project_data_list: object = field(init=False)
-
     path_csv_combined: str = ''
     path_csv_occ: str = ''
     path_csv_img: str = ''    
@@ -44,11 +43,20 @@ class Project_Info():
     csv_occ: str = ''
     csv_img: str = ''
 
+    project_data: object = field(init=False)
+    project_data_list: object = field(init=False)
     Dirs: object = field(init=False) 
 
-    has_valid_images: bool = True
+    def __init__(self, cfg:dict, logger:Logger, dir_home:str, Dirs:Dir_Structure) -> None:
+        """
+        Initialize the Project_Info object
 
-    def __init__(self, cfg, logger, dir_home, Dirs) -> None:
+        Args:
+            cfg (dict): Configuration dictionary
+            logger (Logger): Python logger object
+            dir_home (str): Home directory
+            Dirs (object): Dir_Structure object containing project directory paths
+        """
         self.Dirs = Dirs
         logger.name = 'Project Info'
         logger.info("Gathering Images and Image Metadata")
@@ -85,34 +93,47 @@ class Project_Info():
         # Make all images vertical
         make_images_in_dir_vertical(Dirs.save_original, cfg)
 
-
-
     @property
-    def has_valid_images(self):
+    def has_valid_images(self) -> bool:
         return self.check_for_images()
     
     @property
-    def file_ext(self):
+    def file_ext(self) -> str:
         return f"{['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG', '.bmp', '.BMP', '.tif', '.TIF', '.tiff', '.TIFF']}"
     
-    def check_for_images(self):
+    def check_for_images(self) -> bool:
+        """
+        Check if there are any files in the directory with valid image extensions
+
+        Returns:
+            bool: True if there are valid image files in the directory, False otherwise
+        """
         for filename in os.listdir(self.dir_images):
             if filename.endswith(tuple(self.valid_extensions)):
                 return True
         return False
     
-    def remove_non_numbers(self, s):
+    def remove_non_numbers(self, s:str) -> str:
+        """
+        Remove all non-numeric characters from a string
+
+        Args:
+            s (str): Input string
+        
+        Returns:
+            str: String with only numeric characters
+        """
         return ''.join([char for char in s if char.isdigit()])
     
-    # def copy_images_to_project_dir(self, dir_images, Dirs):
-    #     n_total = len(os.listdir(dir_images))
-    #     for file in tqdm(os.listdir(dir_images), desc=f'{bcolors.HEADER}     Copying images to working directory{bcolors.ENDC}',colour="white",position=0,total = n_total):
-    #         # Copy og image to new dir
-    #         # Copied image will be used for all downstream applications
-    #         source = os.path.join(dir_images, file)
-    #         destination = os.path.join(Dirs.save_original, file)
-    #         shutil.copy(source, destination)
-    def copy_images_to_project_dir(self, dir_images, Dirs):
+    def copy_images_to_project_dir(self, dir_images:str, Dirs:Dir_Structure) -> None:
+        """
+        Copy images to the project directory
+
+        Args:
+            dir_images (str): Directory containing images
+            Dirs (Dir_Structure): Directory structure object
+        """
+
         n_total = len(os.listdir(dir_images))
         for file in tqdm(os.listdir(dir_images), desc=f'{bcolors.HEADER}     Copying images to working directory{bcolors.ENDC}', colour="white", position=0, total=n_total):
             source = os.path.join(dir_images, file)
@@ -126,15 +147,18 @@ class Project_Info():
                 destination = os.path.join(Dirs.save_original, file)
                 shutil.copy(source, destination)
         
-    def make_file_names_custom(self, dir_images, cfg, Dirs): 
+    def make_file_names_custom(self, dir_images:str, cfg:dict, Dirs:Dir_Structure) -> None: 
+        """
+        Create custom file names for images based on configuration settings
+        May remove prefixes, suffixes, and/or non-numeric characters from file names
+
+        Args:
+            dir_images (str): Directory containing images
+            cfg (dict): Configuration dictionary
+            Dirs (Dir_Structure): Directory structure object
+        """
         n_total = len(os.listdir(dir_images))
         for file in tqdm(os.listdir(dir_images), desc=f'{bcolors.HEADER}     Creating Catalog Number from file name{bcolors.ENDC}',colour="green",position=0,total = n_total):
-            # Copy og image to new dir
-            # Copied image will be used for all downstream applications
-            # source = os.path.join(dir_images, file)
-            # destination = os.path.join(Dirs.save_original, file)
-            # shutil.copy(source, destination)
-            
             if cfg['leafmachine']['project']['catalog_numerical_only'] or cfg['leafmachine']['project']['prefix_removal'] or cfg['leafmachine']['project']['suffix_removal']:
                 name = Path(file).stem
                 ext = Path(file).suffix
@@ -152,24 +176,26 @@ class Project_Info():
                     warnings.warn("WARNING: duplicate file names will result given the current selections for 'prefix_removal', 'suffix_removal', or 'catalog_numerical_only'. Change them before continuing.")
                     warnings.warn("The affected file name has not been changed.")
 
-
-
     def __create_combined_csv(self):
+        """
+        Create a combined CSV file from the occurrence and image metadata files
+
+        Returns:
+            str: Path to the combined CSV file
+        """
         self.csv_img = self.csv_img.rename(columns={"gbifID": "gbifID_images"}) 
         self.csv_img = self.csv_img.rename(columns={"identifier": "url"}) 
-        # print(self.csv_img.head(5))
 
         combined = pd.merge(self.csv_img, self.csv_occ, left_on='gbifID_images', right_on='gbifID')
-        # print(combined.head(5))
         names_list = combined.apply(generate_image_filename, axis=1, result_type='expand')
-        # print(names_list.head(5))
+
         # Select columns 7, 0, 1
         selected_columns = names_list.iloc[:,[7,0,1]]
         # Rename columns
         selected_columns.columns = ['fullname','filename_image','filename_image_jpg']
-        # print(selected_columns.head(5))
+
         self.csv_combined = pd.concat([selected_columns, combined], axis=1)
-        # print(self.csv_combined.head(5))
+
         new_name = ''.join(['combined_', os.path.basename(self.path_csv_occ).split('.')[0], '_', os.path.basename(self.path_csv_img).split('.')[0], '.csv'])
         self.path_csv_combined = os.path.join(os.path.dirname(self.path_csv_occ), new_name)
         self.csv_combined.to_csv(self.path_csv_combined, mode='w', header=True, index=False)
@@ -227,33 +253,6 @@ class Project_Info():
         # Print_Verbose(cfg, 2, ''.join(['Image Directory --> ',self.dir_images])).green()
         logger.info(''.join(['Image Directory --> ',Dirs.save_original]))
 
-
-    
-    # def __import_GBIF_files_post_download(self, cfg, logger, dir_home):
-    #     # Download the images from GBIF
-    #     # This pulls from /LeafMachine2/configs/config_download_from_GBIF_all_images_in_file or filter
-    #     print_main_warn('Downloading Images from GBIF...')
-    #     logger.info('Downloading Images from GBIF...')
-    #     self.cfg_images = download_all_images_from_GBIF_LM2(dir_home, cfg['leafmachine']['project']['GBIF_mode'])
-    #     self.dir_images = self.cfg_images['dir_destination_images']
-    #     self.path_csv = self.cfg_images['dir_destination_csv']
-    #     print_main_success(''.join(['Images saved to --> ',self.dir_images]))
-    #     logger.info(''.join(['Images saved to --> ',self.dir_images]))
-
-
-    #     self.path_csv_combined = os.path.join(self.path_csv, self.cfg_images['filename_combined'])
-    #     self.path_csv_occ = os.path.join(self.path_csv, self.cfg_images['filename_occ'])
-    #     self.path_csv_img = os.path.join(self.path_csv, self.cfg_images['filename_img'])
-
-    #     if 'txt' in (self.cfg_images['filename_occ'].split('.')[1] or self.cfg_images['filename_img'].split('.')[1]):
-    #         self.csv_combined = import_tsv(self.path_csv_combined)
-    #         # self.csv_occ = import_tsv(self.path_csv_occ)
-    #         # self.csv_img = import_tsv(self.path_csv_img)
-    #     else:
-    #         self.csv_combined = import_csv(self.path_csv_combined)
-    #         # self.csv_occ = import_csv(self.path_csv_occ)
-    #         # self.csv_img = import_csv(self.path_csv_img)
-
     def process_in_batches(self, cfg):
         batch_size = cfg['leafmachine']['project']['batch_size']
         self.project_data_list = []
@@ -266,29 +265,6 @@ class Project_Info():
             batch = {key: self.project_data[key] for key in batch_keys}
             self.project_data_list.append(batch)
         return num_batches, len(self.project_data)
-
-    # Original
-    '''def __make_project_dict(self):
-        self.project_data = {}
-        for img in os.listdir(self.dir_images):
-            if (img.endswith(".jpg") or img.endswith(".jpeg")):
-                img_name = str(img.split('.')[0])
-                self.project_data[img_name] = {}
-    '''
-    # def __make_project_dict(self): # This DELETES the invalid file, not safe
-    #     self.project_data = {}
-    #     for img in os.listdir(self.dir_images):
-    #         img_split, ext = os.path.splitext(img)
-    #         if ext.lower() in self.valid_extensions:
-    #             with Image.open(os.path.join(self.dir_images, img)) as im:
-    #                 _, ext = os.path.splitext(img)
-    #                 if ext != '.jpg':
-    #                     im = im.convert('RGB')
-    #                     im.save(os.path.join(self.dir_images, img_split) + '.jpg', quality=100)
-    #                     img += '.jpg'
-    #                     os.remove(os.path.join(self.dir_images, ''.join([img_split, ext])))
-    #             img_name = os.path.splitext(img)[0]
-    #             self.project_data[img_split] = {}
 
     def __make_project_dict(self, Dirs):
         self.project_data = {}

@@ -30,13 +30,13 @@ from vouchervision.utils_LLM import remove_colons_and_double_apostrophes
 from prompt_catalog import PromptCatalog
 from vouchervision.model_maps import ModelMaps
 
-'''
+"""
 * For the prefix_removal, the image names have 'MICH-V-' prior to the barcode, so that is used for matching
   but removed for output.
 * There is also code active to replace the LLM-predicted "Catalog Number" with the correct number since it is known.
   The LLMs to usually assign the barcode to the correct field, but it's not needed since it is already known.
         - Look for ####################### Catalog Number pre-defined
-'''
+"""
 
 
     
@@ -98,7 +98,7 @@ class VoucherVision():
         self.init_transcription_xlsx()
         self.init_trOCR_model()
 
-        '''Logging'''
+        """Logging"""
         self.logger.info(f'Transcribing dataset --- {self.dir_labels}')
         self.logger.info(f'Saving transcription batch to --- {self.path_transcription}')
         self.logger.info(f'Saving individual transcription files to --- {self.Dirs.transcription_ind}')
@@ -491,7 +491,7 @@ class VoucherVision():
 
         
     # def initialize_embeddings(self):
-    #     '''Loading embedding search       __init__(self, db_name, path_domain_knowledge, logger, build_new_db=False, model_name="hkunlp/instructor-xl", device="cuda")'''
+    #     """Loading embedding search       __init__(self, db_name, path_domain_knowledge, logger, build_new_db=False, model_name="hkunlp/instructor-xl", device="cuda")"""
     #     self.Voucher_Vision_Embedding = VoucherVisionEmbedding(self.db_name, self.path_domain_knowledge, logger=self.logger, build_new_db=self.build_new_db)
 
 
@@ -525,7 +525,7 @@ class VoucherVision():
         
 
     def write_json_to_file(self, filepath, data):
-        '''Writes dictionary data to a JSON file.'''
+        """Writes dictionary data to a JSON file."""
         with open(filepath, 'w') as txt_file:
             if isinstance(data, dict):
                 data = json.dumps(data, indent=4, sort_keys=False)

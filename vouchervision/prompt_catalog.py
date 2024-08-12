@@ -34,10 +34,10 @@ class PromptCatalog:
 
         self.structure, self.dictionary_structure = self.create_structure(is_palm)
 
-        ''' between  instructions and json_formatting_instructions. Made the prompt too long. Better performance without it
+        """ between  instructions and json_formatting_instructions. Made the prompt too long. Better performance without it
         The unstructured OCR text is:
         {self.OCR}
-        '''
+        """
         if is_palm:
             prompt = f"""Please help me complete this text parsing task given the following rules and unstructured OCR text. Your task is to refactor the OCR text into a structured JSON dictionary that matches the structure specified in the following rules. Please follow the rules strictly.
                 The rules are:

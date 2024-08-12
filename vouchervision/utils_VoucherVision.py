@@ -1,3 +1,4 @@
+import warnings
 import openai
 import os, json, glob, shutil, yaml, torch, logging
 import openpyxl
@@ -6,7 +7,9 @@ import vertexai
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 from langchain_openai import AzureChatOpenAI
 from google.oauth2 import service_account
-from transformers import AutoTokenizer, AutoModel
+from transformers import RobertaForSequenceClassification, RobertaTokenizer
+from logging import Logger
+from google.oauth2.credentials import Credentials
 
 from vouchervision.LLM_OpenAI import OpenAIHandler
 from vouchervision.LLM_GooglePalm2 import GooglePalm2Handler
@@ -18,30 +21,48 @@ from vouchervision.LLM_local_custom_fine_tune import LocalFineTuneHandler
 from vouchervision.prompt_catalog import PromptCatalog
 from vouchervision.model_maps import ModelMaps
 from vouchervision.general_utils import get_cfg_from_full_path
-from vouchervision.OCR_google_cloud_vision import OCREngine 
+from vouchervision.OCR_google_cloud_vision import OCREngine, Redactor
 
-'''
+"""
 * For the prefix_removal, the image names have 'MICH-V-' prior to the barcode, so that is used for matching
   but removed for output.
 * There is also code active to replace the LLM-predicted "Catalog Number" with the correct number since it is known.
   The LLMs to usually assign the barcode to the correct field, but it's not needed since it is already known.
         - Look for ####################### Catalog Number pre-defined
-'''
+"""
 
 
-    
 class VoucherVision():
+    """
+    Main VoucherVision class containing methods to transcribe images using a choice of LLM and OCR engines.
+    """
+    def __init__(self, cfg:dict, logger:Logger, dir_home:str, path_custom_prompts:str, project, dirs, is_hf, banned_words, redaction_granularity, config_vals_for_permutation=None) -> None:
+        """
+        Initializes the VoucherVision class using a given configuration.
 
-    def __init__(self, cfg, logger, dir_home, path_custom_prompts, Project, Dirs, is_hf, config_vals_for_permutation=None):
+        Args:
+            cfg (dict): The configuration dictionary
+            logger (logging.Logger): The logger object
+            dir_home (str): The path to the home directory
+            path_custom_prompts (str): The path to the custom prompts file
+            project (object): The Project object
+            dirs (object): The Dirs object
+            is_hf (bool): Whether the code is running in Hugging Face environment
+            config_vals_for_permutation (dict): Settings for the starting temp, top_k, top_p, seed ...
+        """
+        
         self.cfg = cfg
         self.logger = logger
         self.dir_home = dir_home
         self.path_custom_prompts = path_custom_prompts
-        self.Project = Project
-        self.Dirs = Dirs
+        self.project = project
+        self.dirs = dirs
         self.headers = None
         self.prompt_version = None
         self.is_hf = is_hf
+
+        self.banned_words = banned_words
+        self.redaction_granularity = redaction_granularity
 
         self.OCR_cost = 0.0
         self.OCR_tokens_in = 0
@@ -50,19 +71,17 @@ class VoucherVision():
         ### config_vals_for_permutation allows you to set the starting temp, top_k, top_p, seed....
         self.config_vals_for_permutation = config_vals_for_permutation
 
-        # self.trOCR_model_version = "microsoft/trocr-large-handwritten"
-        # self.trOCR_model_version = "microsoft/trocr-base-handwritten"
-        # self.trOCR_model_version = "dh-unibe/trocr-medieval-escriptmask" # NOPE
-        # self.trOCR_model_version = "dh-unibe/trocr-kurrent" # NOPE
-        # self.trOCR_model_version = "DunnBC22/trocr-base-handwritten-OCR-handwriting_recognition_v2" # NOPE
         self.trOCR_processor = None
         self.trOCR_model = None
 
         self.set_API_keys()
         self.setup()
 
-
-    def setup(self):
+    # NOTE: Why a separate function for setup instead of putting this in __init__?
+    def setup(self) -> None:
+        """
+        Define attributes related to the configuration and call initialization for the OCR and LLM models.
+        """
         self.logger.name = f'[Transcription]'
         self.logger.info(f'Setting up OCR and LLM')
 
@@ -93,29 +112,20 @@ class VoucherVision():
         self.wfo_headers_no_lists = ["WFO_override_OCR", "WFO_exact_match","WFO_exact_match_name","WFO_best_match","WFO_placement"]
         
         self.utility_headers = ["filename"] + self.wfo_headers + self.geo_headers + self.usage_headers + ["run_name", "prompt", "LLM", "tokens_in", "tokens_out", "LM2_collage", "OCR_method", "OCR_double", "OCR_trOCR", "path_to_crop","path_to_original","path_to_content","path_to_helper",]
-                                # "WFO_override_OCR", "WFO_exact_match","WFO_exact_match_name","WFO_best_match","WFO_candidate_names","WFO_placement",
-                                
-                                # "GEO_override_OCR", "GEO_method", "GEO_formatted_full_string", "GEO_decimal_lat",
-                                # "GEO_decimal_long","GEO_city", "GEO_county", "GEO_state",
-                                # "GEO_state_code", "GEO_country", "GEO_country_code", "GEO_continent",
-                                
-                                # "tokens_in", "tokens_out", "path_to_crop","path_to_original","path_to_content","path_to_helper",]
-        
-        # WFO_candidate_names is separate, bc it may be type --> list
 
         self.do_create_OCR_helper_image = self.cfg['leafmachine']['do_create_OCR_helper_image']
 
         self.map_prompt_versions()
         self.map_dir_labels()
         self.map_API_options()
-        # self.init_embeddings()
         self.init_transcription_xlsx()
         self.init_trOCR_model()
+        self.init_redaction_model()
 
-        '''Logging'''
+        """Logging"""
         self.logger.info(f'Transcribing dataset --- {self.dir_labels}')
         self.logger.info(f'Saving transcription batch to --- {self.path_transcription}')
-        self.logger.info(f'Saving individual transcription files to --- {self.Dirs.transcription_ind}')
+        self.logger.info(f'Saving individual transcription files to --- {self.dirs.transcription_ind}')
         self.logger.info(f'Starting transcription...')
         self.logger.info(f'     LLM MODEL --> {self.version_name}')
         self.logger.info(f'     Using Azure API --> {self.is_azure}')
@@ -123,7 +133,23 @@ class VoucherVision():
         self.logger.info(f'     API access token is found in PRIVATE_DATA.yaml --> {self.has_key}')
 
 
-    def init_trOCR_model(self):
+    def init_redaction_model(self)-> None:
+        """
+        Initialize the redaction model for redacting sensitive information.
+        Downloads the fine-tuned classifier model and base tokenizer from Hugging Face.
+        """
+        if self.banned_words is None or self.banned_words == []:
+            self.logger.info("No banned words provided. Skipping redaction model initialization.")
+            return
+        model_id = "kanelindsay2000/roberta-loc-classifier" # TODO: Make configurable
+        tokenizer_id = 'roberta-base'
+        self.redactor = Redactor(device=self.device, logger=self.logger, banned_words=self.banned_words, model_id=model_id, tokenizer_id=tokenizer_id) # TODO: Make configurable
+
+
+    def init_trOCR_model(self) -> None:
+        """
+        Initialize the trOCR model for text recognition and assign to attributes.
+        """
         lgr = logging.getLogger('transformers')
         lgr.setLevel(logging.ERROR)
         
@@ -135,7 +161,10 @@ class VoucherVision():
         self.trOCR_model.to(self.device)
 
 
-    def map_API_options(self):
+    def map_API_options(self) -> None:
+        """
+        Map the specified LLM version in the config to the corresponding model name, Azure status, and API key status.
+        """
         self.chat_version = self.cfg['leafmachine']['LLM_version']
 
         # Get the required values from ModelMaps
@@ -151,7 +180,10 @@ class VoucherVision():
         self.version_name = self.chat_version
 
 
-    def map_prompt_versions(self):
+    def map_prompt_versions(self) -> None:
+        """
+        Map the specified prompt version in the config to the corresponding prompt file.
+        """
         self.prompt_version_map = {
             "Version 1": "prompt_v1_verbose",
         }
@@ -159,21 +191,33 @@ class VoucherVision():
         self.is_predefined_prompt = self.is_in_prompt_version_map(self.prompt_version)
 
 
-    def is_in_prompt_version_map(self, value):
+    def is_in_prompt_version_map(self, value) -> bool:
+        """
+        Check if the given value is in the prompt version mapping values.
+
+        Returns:
+            bool: True if the value is in the mapping values, False otherwise
+        """
         return value in self.prompt_version_map.values()
 
 
-    def map_dir_labels(self):
+    def map_dir_labels(self) -> None:
+        """
+
+        """
         if self.cfg['leafmachine']['use_RGB_label_images']:
-            self.dir_labels = os.path.join(self.Dirs.save_per_annotation_class,'label')
+            self.dir_labels = os.path.join(self.dirs.save_per_annotation_class,'label')
         else:
-            self.dir_labels = self.Dirs.save_original
+            self.dir_labels = self.dirs.save_original
 
         # Use glob to get all image paths in the directory
         self.img_paths = glob.glob(os.path.join(self.dir_labels, "*"))
 
 
-    def load_rules_config(self):
+    def load_rules_config(self) -> dict|None:
+        """
+
+        """
         with open(self.path_custom_prompts, 'r') as stream:
             try:
                 return yaml.safe_load(stream)
@@ -182,7 +226,13 @@ class VoucherVision():
                 return None
             
 
-    def generate_xlsx_headers(self):
+    def generate_xlsx_headers(self) -> list:
+        """
+        Generate the headers for an output Excel file based on the JSON template rules.
+
+        Returns:
+            list: The list of headers
+        """
         # Extract headers from the 'Dictionary' keys in the JSON template rules
         # xlsx_headers = list(self.rules_config_json['rules']["Dictionary"].keys())
         xlsx_headers = list(self.rules_config_json['rules'].keys())
@@ -190,9 +240,12 @@ class VoucherVision():
         return xlsx_headers
 
 
-    def init_transcription_xlsx(self):
+    def init_transcription_xlsx(self) -> None:
+        """
+        Initialize the output Excel file for transcription based on the JSON template rules.
+        """
         # Initialize output file
-        self.path_transcription = os.path.join(self.Dirs.transcription,"transcribed.xlsx")
+        self.path_transcription = os.path.join(self.dirs.transcription,"transcribed.xlsx")
         
         # else:
         if not self.is_predefined_prompt:
@@ -206,10 +259,19 @@ class VoucherVision():
             # If it's a predefined prompt, raise an exception as we don't have further instructions
             raise ValueError("Predefined prompt is not handled in this context.")
 
-        self.create_or_load_excel_with_headers(os.path.join(self.Dirs.transcription,"transcribed.xlsx"), self.headers)
+        self.create_or_load_excel_with_headers(os.path.join(self.dirs.transcription,"transcribed.xlsx"), self.headers)
 
            
-    def create_or_load_excel_with_headers(self, file_path, headers, show_head=False):
+    def create_or_load_excel_with_headers(self, file_path:str, headers:list, show_head:bool=False) -> None:
+        """
+        Create or load an Excel file with the given list of attribute headers
+
+        Args:
+            file_path (str): The path to the Excel file
+            headers (list): The list of headers
+            show_head (bool): Whether to show the first 5 rows of the Excel file for inspection
+        """
+
         output_dir_names = ['Archival_Components', 'Config_File', 'Cropped_Images', 'Logs', 'Original_Images', 'Transcription']
         self.completed_specimens = []
 
@@ -308,8 +370,13 @@ class VoucherVision():
 
 
     def add_data_to_excel_from_response(self, Dirs, path_transcription, response, WFO_record, GEO_record, usage_report, 
-                                        MODEL_NAME_FORMATTED, filename_without_extension, path_to_crop, path_to_content, path_to_helper, nt_in, nt_out):
-        
+                                        MODEL_NAME_FORMATTED, filename_without_extension, path_to_crop, path_to_content, path_to_helper, nt_in, nt_out) -> None:
+        """
+        Add data from a transcription response to a given Excel file.
+
+        Args:
+            TODO: Research and fill in arguments
+        """
 
         wb = openpyxl.load_workbook(path_transcription)
         sheet = wb.active
@@ -343,12 +410,6 @@ class VoucherVision():
                     sheet.cell(row=next_row, column=i, value=cell_value[0])
 
             elif header.value in self.catalog_name_options: 
-                # if self.prefix_removal:
-                #     filename_without_extension = filename_without_extension.replace(self.prefix_removal, "")
-                # if self.suffix_removal:
-                #     filename_without_extension = filename_without_extension.replace(self.suffix_removal, "")
-                # if self.catalog_numerical_only:
-                #     filename_without_extension = self.remove_non_numbers(filename_without_extension)
                 sheet.cell(row=next_row, column=i, value=filename_without_extension)
             elif header.value == "path_to_crop":
                 sheet.cell(row=next_row, column=i, value=path_to_crop)
@@ -391,14 +452,6 @@ class VoucherVision():
             # "WFO_exact_match","WFO_exact_match_name","WFO_best_match","WFO_candidate_names","WFO_placement"
             elif header.value in self.wfo_headers_no_lists:
                 sheet.cell(row=next_row, column=i, value=WFO_record.get(header.value, ''))
-            # elif header.value == "WFO_exact_match":
-            #     sheet.cell(row=next_row, column=i, value= WFO_record.get("WFO_exact_match",''))
-            # elif header.value == "WFO_exact_match_name":
-            #     sheet.cell(row=next_row, column=i, value= WFO_record.get("WFO_exact_match_name",''))
-            # elif header.value == "WFO_best_match":
-            #     sheet.cell(row=next_row, column=i, value= WFO_record.get("WFO_best_match",''))
-            # elif header.value == "WFO_placement":
-            #     sheet.cell(row=next_row, column=i, value= WFO_record.get("WFO_placement",''))
             elif header.value == "WFO_candidate_names":
                 candidate_names = WFO_record.get("WFO_candidate_names", '')
                 # Check if candidate_names is a list and convert to a string if it is
@@ -422,16 +475,19 @@ class VoucherVision():
         # save the workbook
         wb.save(path_transcription)
     
-
-    def has_API_key(self, val):
+    def has_API_key(self, val) -> bool:
+        """
+        Check if the given API key value value is a non-empty string.
+        """
         return isinstance(val, str) and bool(val.strip())
-        # if val != '':
-        #     return True
-        # else:
-        #     return False
         
+    def get_google_credentials(self) -> Credentials: # Also used for google drive
+        """
+        Get the Google credentials from the environment variables or the PRIVATE_DATA.yaml file.
 
-    def get_google_credentials(self): # Also used for google drive
+        Returns:
+            google.oauth2.credentials.Credentials: The Google credentials object for a service account
+        """
         if self.is_hf:
             creds_json_str = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
             credentials = service_account.Credentials.from_service_account_info(json.loads(creds_json_str))
@@ -444,8 +500,10 @@ class VoucherVision():
                 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = creds_json_str
                 return credentials
         
-
-    def set_API_keys(self):
+    def set_API_keys(self) -> None:
+        """
+        Set the API keys for OpenAI, Hugging Face, Google, Mistral, HERE, and OpenCage Geocode.
+        """
         if self.is_hf:
             self.dir_home = os.path.dirname(os.path.dirname(__file__))
             self.path_cfg_private = None
@@ -481,8 +539,6 @@ class VoucherVision():
             k_here = self.cfg_private['here']['API_KEY']
             k_opencage = self.cfg_private['open_cage_geocode']['API_KEY']
             
-
-
         self.has_key_openai = self.has_API_key(k_openai)
         self.has_key_azure_openai = self.has_API_key(k_openai_azure)
         self.llm = None
@@ -497,9 +553,7 @@ class VoucherVision():
         self.has_key_here = self.has_API_key(k_here)
         self.has_key_open_cage_geocode = self.has_API_key(k_opencage)
 
-        
-
-        ### Google - OCR, Palm2, Gemini
+        # Google - OCR, Palm2, Gemini
         if self.has_key_google_application_credentials and self.has_key_google_project_id and self.has_key_google_location:
             if self.is_hf:
                 vertexai.init(project=os.getenv('GOOGLE_PROJECT_ID'), location=os.getenv('GOOGLE_LOCATION'), credentials=self.get_google_credentials())
@@ -507,8 +561,7 @@ class VoucherVision():
                 vertexai.init(project=k_google_project_id, location=k_google_location, credentials=self.get_google_credentials())
                 os.environ['GOOGLE_API_KEY'] = self.cfg_private['google']['GOOGLE_PALM_API']
 
-
-        ### OpenAI
+        # OpenAI
         if self.has_key_openai:
             if self.is_hf:
                 openai.api_key = os.getenv('OPENAI_API_KEY')
@@ -516,13 +569,14 @@ class VoucherVision():
                 openai.api_key = self.cfg_private['openai']['OPENAI_API_KEY']
                 os.environ["OPENAI_API_KEY"] = self.cfg_private['openai']['OPENAI_API_KEY']
 
+        # Hugging Face
         if self.has_key_huggingface:
             if self.is_hf:
                 pass
             else:
                 os.environ["HUGGING_FACE_KEY"] = self.cfg_private['huggingface']['hf_token']
 
-        ### OpenAI - Azure
+        # OpenAI - Azure
         if self.has_key_azure_openai:
             if self.is_hf:
                 # Initialize the Azure OpenAI client
@@ -544,16 +598,14 @@ class VoucherVision():
                     openai_organization = self.cfg_private['openai_azure']['OPENAI_ORGANIZATION'],
                 )
                 
-
-        ### Mistral
+        # Mistral
         if self.has_key_mistral:
             if self.is_hf:
                 pass # Already set
             else:
                 os.environ['MISTRAL_API_KEY'] = self.cfg_private['mistral']['MISTRAL_API_KEY']
 
-
-        ### HERE
+        # HERE (Geolocation)
         if self.has_key_here:
             if self.is_hf:
                 pass # Already set
@@ -561,18 +613,24 @@ class VoucherVision():
                 os.environ['HERE_APP_ID'] = self.cfg_private['here']['APP_ID']
                 os.environ['HERE_API_KEY'] = self.cfg_private['here']['API_KEY']
 
-
-        ### HERE
+        # Opencage (Geolocation)
         if self.has_key_open_cage_geocode:
             if self.is_hf:
                 pass # Already set
             else:
                 os.environ['OPENCAGE_API_KEY'] = self.cfg_private['open_cage_geocode']['API_KEY']
-                
 
-        
-    def clean_catalog_number(self, data, filename_without_extension):
-        #Cleans up the catalog number in data if it's a dict
+    def clean_catalog_number(self, data:dict, filename_without_extension:str) -> dict:
+        """
+        Cleans up the catalog number in data if it's a dict
+
+        Args:
+            data (dict): The data dictionary
+            filename_without_extension (str): The filename without extension
+
+        Returns:
+            dict: The modified data dictionary
+        """
         
         def modify_catalog_key(catalog_key, filename_without_extension, data):
             # Helper function to apply modifications on catalog number
@@ -587,6 +645,7 @@ class VoucherVision():
             if self.catalog_numerical_only:
                 filename_without_extension = self.remove_non_numbers(data[catalog_key])
             data[catalog_key] = filename_without_extension
+
             return data
         
         if isinstance(data, dict):
@@ -598,25 +657,45 @@ class VoucherVision():
                 raise ValueError("Invalid headers used.")
         else:
             raise TypeError("Data is not of type dict.")
-        
 
-    def write_json_to_file(self, filepath, data):
-        '''Writes dictionary data to a JSON file.'''
+    def write_json_to_file(self, filepath:str, data:dict) -> None:
+        """
+        Writes dictionary data to a JSON file.
+
+        Args:
+            filepath (str): The path to the JSON file
+            data (dict): The dictionary data to write to the
+        """
         with open(filepath, 'w') as txt_file:
             if isinstance(data, dict):
                 data = json.dumps(data, indent=4, sort_keys=False)
             txt_file.write(data)
 
+    def remove_non_numbers(self, s:str) -> str:
+        """
+        Removes all non-numeric characters from a string.
 
-    # def create_null_json(self):
-    #     return {}
-    
-
-    def remove_non_numbers(self, s):
+        Args:
+            s (str): The input string
+        
+        Returns:
+            str: The string with only numeric characters
+        """
         return ''.join([char for char in s if char.isdigit()])
-    
 
-    def create_null_row(self, filename_without_extension, path_to_crop, path_to_content, path_to_helper):
+    def create_null_row(self, filename_without_extension:str, path_to_crop:str, path_to_content:str, path_to_helper:str) -> dict:
+        """
+        Creates a null row with empty values for all headers.
+
+        Args:
+            filename_without_extension (str): The filename without extension
+            path_to_crop (str): The path to the cropped image
+            path_to_content (str): The path to the content image
+            path_to_helper (str): The path to the helper image
+        
+        Returns:
+            dict: The null row dictionary
+        """
         json_dict = {header: '' for header in self.headers} 
         for header, value in json_dict.items():
             if header == "path_to_crop":
@@ -650,16 +729,29 @@ class VoucherVision():
     ##################################################################################################################################
     ##################################################     OCR      ##################################################################
     ##################################################################################################################################
-    def perform_OCR_and_save_results(self, image_index, json_report, jpg_file_path_OCR_helper, txt_file_path_OCR, txt_file_path_OCR_bounds):
+    # TODO: Add redaction functionality
+    def perform_OCR_and_save_results(self, image_index:int, json_report:object, jpg_file_path_OCR_helper:str, txt_file_path_OCR:str, txt_file_path_OCR_bounds:str, jpg_file_path_redaction:str) -> None:
+        """
+        Performs OCR using Google Vision API an image and saves the results to a JSON file
+
+        Args:
+            image_index (int): The index of the image in the list of images
+            json_report (VoucherVision_GUI.JSONReport): The JSON report object
+            jpg_file_path_OCR_helper (str): The path to save the OCR helper image
+            txt_file_path_OCR (str): The path to save the OCR JSON file
+            txt_file_path_OCR_bounds (str): The path to save the OCR bounds JSON file
+        """
         self.logger.info(f'Working on {image_index + 1}/{len(self.img_paths)} --- Starting OCR')
         # self.OCR - None
         self.OCR_cost = 0.0
         self.OCR_tokens_in = 0
         self.OCR_tokens_out = 0
 
-        ### Process_image() runs the OCR for text, handwriting, trOCR AND creates the overlay image
-        ocr_google = OCREngine(self.logger, json_report, self.dir_home, self.is_hf, self.path_to_crop, self.cfg, self.trOCR_model_version, self.trOCR_model, self.trOCR_processor, self.device)  
-        ocr_google.process_image(self.do_create_OCR_helper_image, self.logger)
+        # NOTE: The OCREngine instance is created and destroyed for each image, 
+        ocr_google = OCREngine(self.logger, json_report, self.dir_home, self.is_hf, self.path_to_crop, self.cfg, self.trOCR_model_version, self.trOCR_model,
+                               self.trOCR_processor, self.device, redactor=self.redactor, redaction_granularity=self.redaction_granularity)
+
+        ocr_google.process_image(self.do_create_OCR_helper_image, self.logger) # process_image() runs the OCR for text, handwriting, trOCR AND creates the overlay image
         self.OCR = ocr_google.OCR
 
         self.OCR_cost = ocr_google.cost
@@ -673,7 +765,8 @@ class VoucherVision():
         self.logger.info(f'Working on {image_index + 1}/{len(self.img_paths)} --- Finished OCR')
 
         if len(self.OCR) > 0:
-            ocr_google.overlay_image.save(jpg_file_path_OCR_helper)
+            ocr_google.image_ocr.save(jpg_file_path_OCR_helper)
+            ocr_google.image_redacted.save(jpg_file_path_redaction)
 
             OCR_bounds = {}
             if ocr_google.hand_text_to_box_mapping is not None:
@@ -688,7 +781,8 @@ class VoucherVision():
             self.write_json_to_file(txt_file_path_OCR_bounds, OCR_bounds)
             self.logger.info(f'Working on {image_index + 1}/{len(self.img_paths)} --- Saved OCR Overlay Image')
         else:
-            pass ########################################################################################################################### fix logic for no OCR
+            warnings.warn(f'No text found in image {image_index + 1}/{len(self.img_paths)}')
+            
 
     ##################################################################################################################################
     #######################################################  LLM Switchboard  ########################################################
@@ -710,7 +804,7 @@ class VoucherVision():
         self.setup_JSON_dict_structure()
 
         Copy_Prompt = PromptCatalog()
-        Copy_Prompt.copy_prompt_template_to_new_dir(self.Dirs.transcription_prompt, self.path_custom_prompts)
+        Copy_Prompt.copy_prompt_template_to_new_dir(self.dirs.transcription_prompt, self.path_custom_prompts)
         
         if json_report:
             json_report.set_text(text_main=f'Loading {MODEL_NAME_FORMATTED}')
@@ -727,10 +821,12 @@ class VoucherVision():
             paths = self.generate_paths(path_to_crop, i)
             self.path_to_crop = path_to_crop
 
-            filename_without_extension, txt_file_path, txt_file_path_OCR, txt_file_path_OCR_bounds, jpg_file_path_OCR_helper, json_file_path_wiki, txt_file_path_ind_prompt = paths
+            # The call to the OCR engine is inside the LLM switchboard!
+            # TODO: Separate the OCR engine call from the LLM switchboard
+            filename_without_extension, txt_file_path, txt_file_path_OCR, txt_file_path_OCR_bounds, jpg_file_path_OCR_helper, json_file_path_wiki, txt_file_path_ind_prompt, redaction_ind_path = paths
             if json_report:
                 json_report.set_text(text_main='Starting OCR')
-            self.perform_OCR_and_save_results(i, json_report, jpg_file_path_OCR_helper, txt_file_path_OCR, txt_file_path_OCR_bounds)
+            self.perform_OCR_and_save_results(i, json_report, jpg_file_path_OCR_helper, txt_file_path_OCR, txt_file_path_OCR_bounds, redaction_ind_path)
             if json_report:
                 json_report.set_text(text_main='Finished OCR')
 
@@ -851,13 +947,13 @@ class VoucherVision():
 
 
     def update_final_response(self, response_candidate, WFO_record, GEO_record, usage_report, MODEL_NAME_FORMATTED, paths, path_to_crop, nt_in, nt_out):
-        filename_without_extension, txt_file_path, txt_file_path_OCR, txt_file_path_OCR_bounds, jpg_file_path_OCR_helper, json_file_path_wiki, txt_file_path_ind_prompt = paths
+        filename_without_extension, txt_file_path, txt_file_path_OCR, txt_file_path_OCR_bounds, jpg_file_path_OCR_helper, json_file_path_wiki, txt_file_path_ind_prompt, jpg_file_path_redaction = paths
         # Saving the JSON and XLSX files with the response and updating the final JSON response
         if response_candidate is not None:
-            final_JSON_response_updated = self.save_json_and_xlsx(self.Dirs, response_candidate, WFO_record, GEO_record, usage_report, MODEL_NAME_FORMATTED, filename_without_extension, path_to_crop, txt_file_path, jpg_file_path_OCR_helper, nt_in, nt_out)
+            final_JSON_response_updated = self.save_json_and_xlsx(self.dirs, response_candidate, WFO_record, GEO_record, usage_report, MODEL_NAME_FORMATTED, filename_without_extension, path_to_crop, txt_file_path, jpg_file_path_OCR_helper, nt_in, nt_out)
             return final_JSON_response_updated, WFO_record, GEO_record
         else:
-            final_JSON_response_updated = self.save_json_and_xlsx(self.Dirs, response_candidate, WFO_record, GEO_record, usage_report, MODEL_NAME_FORMATTED, filename_without_extension, path_to_crop, txt_file_path, jpg_file_path_OCR_helper, nt_in, nt_out)
+            final_JSON_response_updated = self.save_json_and_xlsx(self.dirs, response_candidate, WFO_record, GEO_record, usage_report, MODEL_NAME_FORMATTED, filename_without_extension, path_to_crop, txt_file_path, jpg_file_path_OCR_helper, nt_in, nt_out)
             return final_JSON_response_updated, WFO_record, GEO_record
 
 
@@ -876,16 +972,18 @@ class VoucherVision():
 
     def generate_paths(self, path_to_crop, i):
         filename_without_extension = os.path.splitext(os.path.basename(path_to_crop))[0]
-        txt_file_path = os.path.join(self.Dirs.transcription_ind, filename_without_extension + '.json')
-        txt_file_path_OCR = os.path.join(self.Dirs.transcription_ind_OCR, filename_without_extension + '.json')
-        txt_file_path_OCR_bounds = os.path.join(self.Dirs.transcription_ind_OCR_bounds, filename_without_extension + '.json')
-        jpg_file_path_OCR_helper = os.path.join(self.Dirs.transcription_ind_OCR_helper, filename_without_extension + '.jpg')
-        json_file_path_wiki = os.path.join(self.Dirs.transcription_ind_wiki, filename_without_extension + '.json')
-        txt_file_path_ind_prompt = os.path.join(self.Dirs.transcription_ind_prompt, filename_without_extension + '.txt')
+        txt_file_path = os.path.join(self.dirs.transcription_ind, filename_without_extension + '.json')
+        txt_file_path_OCR = os.path.join(self.dirs.transcription_ind_OCR, filename_without_extension + '.json')
+        txt_file_path_OCR_bounds = os.path.join(self.dirs.transcription_ind_OCR_bounds, filename_without_extension + '.json')
+        jpg_file_path_OCR_helper = os.path.join(self.dirs.transcription_ind_OCR_helper, filename_without_extension + '.jpg')
+        json_file_path_wiki = os.path.join(self.dirs.transcription_ind_wiki, filename_without_extension + '.json')
+        txt_file_path_ind_prompt = os.path.join(self.dirs.transcription_ind_prompt, filename_without_extension + '.txt')
+
+        jpg_file_path_redaction = os.path.join(self.dirs.ind_redaction, filename_without_extension + '.jpg')
 
         self.logger.info(f'Working on {i+1}/{len(self.img_paths)} --- {filename_without_extension}')
 
-        return filename_without_extension, txt_file_path, txt_file_path_OCR, txt_file_path_OCR_bounds, jpg_file_path_OCR_helper, json_file_path_wiki, txt_file_path_ind_prompt
+        return filename_without_extension, txt_file_path, txt_file_path_OCR, txt_file_path_OCR_bounds, jpg_file_path_OCR_helper, json_file_path_wiki, txt_file_path_ind_prompt, jpg_file_path_redaction
 
 
     def save_json_and_xlsx(self, Dirs, response, WFO_record, GEO_record, usage_report, 
@@ -934,13 +1032,6 @@ class VoucherVision():
         for handler in self.logger.handlers[:]:
             handler.close()
             self.logger.removeHandler(handler)
-
-
-    # def process_specimen_batch_OCR_test(self, path_to_crop):
-    #     for img_filename in os.listdir(path_to_crop):
-    #         img_path = os.path.join(path_to_crop, img_filename)
-    #     self.OCR, self.bounds, self.text_to_box_mapping = detect_text(img_path)
-
 
 
 def space_saver(cfg, Dirs, logger):

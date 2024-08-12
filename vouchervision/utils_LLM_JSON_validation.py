@@ -139,35 +139,34 @@ def extract_json_dict_manual(text):
     except Exception as e:
         print("Error parsing JSON:", e)
         return None
-'''
-if __name__ == "__main__":
-    tex = """Extracted JSON string: {"catalogNumber": "MPU395640",
-    "order": "Monimizeae",
-    "family": "Monimiaceae",
-    "scientificName": "Hedycarya parvifolia",
-    "scientificNameAuthorship": "Perkins & Schltr.",
-    "genus": "Hedycarya",
-    "subgenus": null,
-    "specificEpithet": "parvifolia",
-    "infraspecificEpithet": null,
-    "identifiedBy": null,
-    "recordedBy": "R. Pouteau & J. Munzinger",
-    "recordNumber": "RP 1",
-    "verbatimEventDate": "26-2-2013",
-    "eventDate": "2013-02-26",
-    "habitat": "Ultramafique Long. 165 ° 52'21  E, Lat. 21 ° 29'19  S, Maquis",
-    "occurrenceRemarks": "Fruit Arbuste, Ht. 1,5 mètre (s), Fruits verts (immatures) à noirs (matures), Coll. R. Pouteau & J. Munzinger N° RP 1, Dupl. P - MPU, RECOLNAT, Herbier IRD de Nouvelle - Calédonie Poutan 1, Golden Thread, Alt. 818 mètre, Diam. 2 cm, Date 26-2-2013",
-    "country": "Nouvelle Calédonie",
-    "stateProvince": null,
-    "county": null,
-    "municipality": null,
-    "locality": "Antenne du plateau de Bouakaine",
-    "degreeOfEstablishment": "cultivated",
-    "decimalLatitude": -21.488611,
-    "decimalLongitude": 165.8725,
-    "verbatimCoordinates": "Long. 165 ° 52'21  E, Lat. 21 ° 29'19  S",
-    "minimumElevationInMeters": 818,
-    "maximumElevationInMeters": 818
-    \\}"""
-    new = extract_json_dict(tex)
-'''
+
+# if __name__ == "__main__":
+#     tex = """Extracted JSON string: {"catalogNumber": "MPU395640",
+#     "order": "Monimizeae",
+#     "family": "Monimiaceae",
+#     "scientificName": "Hedycarya parvifolia",
+#     "scientificNameAuthorship": "Perkins & Schltr.",
+#     "genus": "Hedycarya",
+#     "subgenus": null,
+#     "specificEpithet": "parvifolia",
+#     "infraspecificEpithet": null,
+#     "identifiedBy": null,
+#     "recordedBy": "R. Pouteau & J. Munzinger",
+#     "recordNumber": "RP 1",
+#     "verbatimEventDate": "26-2-2013",
+#     "eventDate": "2013-02-26",
+#     "habitat": "Ultramafique Long. 165 ° 52'21  E, Lat. 21 ° 29'19  S, Maquis",
+#     "occurrenceRemarks": "Fruit Arbuste, Ht. 1,5 mètre (s), Fruits verts (immatures) à noirs (matures), Coll. R. Pouteau & J. Munzinger N° RP 1, Dupl. P - MPU, RECOLNAT, Herbier IRD de Nouvelle - Calédonie Poutan 1, Golden Thread, Alt. 818 mètre, Diam. 2 cm, Date 26-2-2013",
+#     "country": "Nouvelle Calédonie",
+#     "stateProvince": null,
+#     "county": null,
+#     "municipality": null,
+#     "locality": "Antenne du plateau de Bouakaine",
+#     "degreeOfEstablishment": "cultivated",
+#     "decimalLatitude": -21.488611,
+#     "decimalLongitude": 165.8725,
+#     "verbatimCoordinates": "Long. 165 ° 52'21  E, Lat. 21 ° 29'19  S",
+#     "minimumElevationInMeters": 818,
+#     "maximumElevationInMeters": 818
+#     \\}"""
+#     new = extract_json_dict(tex)

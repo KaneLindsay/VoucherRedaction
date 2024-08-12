@@ -284,7 +284,7 @@ def detect_armature_components(cfg, logger, dir_home, Project, Dirs):
     return Project
 
 
-''' RUN IN PARALLEL'''
+""" RUN IN PARALLEL"""
 def run_in_parallel(weights, source, project, name, imgsz, nosave, anno_type, conf_thres, line_thickness, ignore_objects_for_overlay, mode, LOGGER, chunk, n_workers):
     num_files = len(os.listdir(source))
     LOGGER.info(f"The number of worker threads: ({n_workers}), number of files ({num_files}).")
@@ -307,7 +307,7 @@ def run_in_parallel(weights, source, project, name, imgsz, nosave, anno_type, co
         mode=mode,
         LOGGER=LOGGER)
 
-''' RUN IN PARALLEL'''
+""" RUN IN PARALLEL"""
 
 
 ###### Multi-thread NOTE this works, but unless there are several thousand images, it will be slower
@@ -389,7 +389,7 @@ def create_dictionary_from_txt(logger, dir_components, component, Project):
 
 
 # old below   
-'''def create_dictionary_from_txt(dir_components, component, Project):
+"""def create_dictionary_from_txt(dir_components, component, Project):
     # dict_labels = {}
     for file in os.listdir(dir_components):
         if file.endswith(".txt"):
@@ -406,7 +406,7 @@ def create_dictionary_from_txt(logger, dir_components, component, Project):
                 Project.project_data[file_name]['width'] = int(width)
     # for key, value in dict_labels.items():
     #     print(f'{key}  --> {value}')
-    return Project.project_data'''
+    return Project.project_data"""
 
 
 
@@ -419,7 +419,7 @@ def fetch_labels(dir_exisiting_labels, new_dir):
     shutil.copytree(dir_exisiting_labels, new_dir)
 
 
-'''Landmarks - uses YOLO, but works differently than above. A hybrid between segmentation and component detector'''
+"""Landmarks - uses YOLO, but works differently than above. A hybrid between segmentation and component detector"""
 def detect_landmarks(cfg, logger, dir_home, Project, batch, n_batches, Dirs, segmentation_complete):
     start_t = perf_counter()
     logger.name = f'[BATCH {batch+1} Detect Landmarks]'
@@ -672,7 +672,7 @@ def run_landmarks(cfg, logger, dir_home, Project, batch, n_batches, Dirs, leaf_t
     torch.cuda.empty_cache()
 
     return Project
-    '''def add_to_dictionary_from_txt(cfg, Dirs, leaf_type, dir_components, component, Project, dimensions_dict, dir_temp):
+    """def add_to_dictionary_from_txt(cfg, Dirs, leaf_type, dir_components, component, Project, dimensions_dict, dir_temp):
     # dict_labels = {}
     for file in os.listdir(dir_components):
         file_name = str(file.split('.')[0])
@@ -688,7 +688,7 @@ def run_landmarks(cfg, logger, dir_home, Project, batch, n_batches, Dirs, leaf_t
                 width = dimensions_dict[file_name][1]
 
                 Leaf_Skeleton = LeafSkeleton(cfg, Dirs, leaf_type, all_points, height, width, dir_temp, file_name)
-                QC_add = Leaf_Skeleton.get_QC()'''
+                QC_add = Leaf_Skeleton.get_QC()"""
 
 
     return Project.project_data
@@ -814,7 +814,7 @@ def add_to_dictionary_from_txt(cfg, logger, Dirs, leaf_type, dir_components, com
             pdf.savefig(fig)  # Save the remaining images on the last page
 
     ### QC
-    '''do_save_QC_pdf = False # TODO refine this
+    """do_save_QC_pdf = False # TODO refine this
     if do_save_QC_pdf:
         # dict_labels = {}
         fig = plt.figure(figsize=(8.27, 11.69), dpi=dpi) # A4 size, 300 dpi
@@ -857,7 +857,7 @@ def add_to_dictionary_from_txt(cfg, logger, Dirs, leaf_type, dir_components, com
                     pass
 
             if row != 0 or col != 0:
-                pdf.savefig(fig)  # Save the remaining images on the last page'''
+                pdf.savefig(fig)  # Save the remaining images on the last page"""
 
 
 def add_armature_skeleton_to_project(cfg, logger, Project, batch, file_name_parent, component, Dirs, leaf_type, all_points, height, width, dir_temp, file_name, ARM):
@@ -912,7 +912,7 @@ def add_leaf_skeleton_to_project(cfg, logger, Project, batch, file_name_parent, 
     return Project
 
 
-'''
+"""
 self.determine_lamina_length('final') 
 
 # Lamina tip and base
@@ -943,7 +943,7 @@ if self.base_right:
 for point in self.width_infer:
 
 
-'''
+"""
 
 
 

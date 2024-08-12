@@ -8,7 +8,7 @@ import os, sys, inspect, json, time
 # from prompts import PROMPT_PaLM_UMICH_skeleton_all_asia, PROMPT_PaLM_OCR_Organized, PROMPT_PaLM_Redo
 # from LLM_PaLM import create_OCR_analog_for_input, num_tokens_from_string
 
-'''
+"""
 https://docs.ai21.com/docs/python-sdk-with-amazon-bedrock
 
 
@@ -16,7 +16,7 @@ https://techcommunity.microsoft.com/t5/ai-machine-learning-blog/falcon-llms-in-a
 https://github.com/Azure/azureml-examples/blob/main/sdk/python/foundation-models/huggingface/inference/text-generation-streaming/text-generation-streaming-online-endpoint.ipynb
 https://ml.azure.com/registries/HuggingFace/models/tiiuae-falcon-40b-instruct/version/12?tid=e66e77b4-5724-44d7-8721-06df160450ce#overview
 https://azure.microsoft.com/en-us/products/machine-learning/
-'''
+"""
 
 
 
@@ -54,7 +54,7 @@ https://azure.microsoft.com/en-us/products/machine-learning/
 # registry_ml_client = MLClient(credential, registry_name="HuggingFace")
 # print(registry_ml_client)
 
-'''
+"""
 def OCR_to_dict_Falcon(logger, OCR, VVE):
     # Find a similar example from the domain knowledge
     domain_knowledge_example = VVE.query_db(OCR, 4)
@@ -109,4 +109,4 @@ def OCR_to_dict_Falcon(logger, OCR, VVE):
         response_valid = {}
 
     return response_valid
-'''
+"""

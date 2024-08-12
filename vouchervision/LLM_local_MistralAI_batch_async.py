@@ -9,9 +9,9 @@ import asyncio
 
 from utils_LLM import validate_and_align_JSON_keys_with_template, count_tokens, validate_taxonomy_WFO, validate_coordinates_here, remove_colons_and_double_apostrophes, SystemLoadMonitor
 
-'''
+"""
 https://python.langchain.com/docs/integrations/llms/huggingface_pipelines
-'''
+"""
 
 from torch.utils.data import Dataset, DataLoader
 # Dataset for handling prompts

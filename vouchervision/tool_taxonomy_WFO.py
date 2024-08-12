@@ -227,7 +227,7 @@ def validate_taxonomy_WFO(tool_WFO, record_dict, replace_if_success_wfo=False):
     except:
         return record_dict, Matcher.NULL_DICT
 
-'''
+"""
 if __name__ == "__main__":
     Matcher = WFONameMatcher()
     # input_string = "Rhopalocarpus alterfolius"
@@ -330,4 +330,4 @@ if __name__ == "__main__":
     for opt in options:
         simplified_response = Matcher.check_WFO(opt)
         print(json.dumps(simplified_response, indent=4))
-'''
+"""

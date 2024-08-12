@@ -11,7 +11,7 @@ for split, split_dataset in dataset.items():
     split_dataset.to_json(f"{save_dir}/SLTPvC_v1-0_medium_OCR-C25-L25-E50-R05-{split}.jsonl")
 
 
-'''import json # convert to google
+"""import json # convert to google
 
 # Load the JSONL file
 input_file_path = '/mnt/data/SLTPvC_v1-0_medium_OCR-C25-L25-E50-R05-train.jsonl'
@@ -31,4 +31,4 @@ with open(input_file_path, 'r', encoding='utf-8') as infile, open(output_file_pa
         converted_record = convert_record(record)
         outfile.write(json.dumps(converted_record) + '\n')
 
-output_file_path'''
+output_file_path"""

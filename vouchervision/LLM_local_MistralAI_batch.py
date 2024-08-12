@@ -8,9 +8,9 @@ from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 
 from utils_LLM import validate_and_align_JSON_keys_with_template, count_tokens, validate_taxonomy_WFO, validate_coordinates_here, remove_colons_and_double_apostrophes, SystemLoadMonitor
 
-'''
+"""
 https://python.langchain.com/docs/integrations/llms/huggingface_pipelines
-'''
+"""
 
 from torch.utils.data import Dataset, DataLoader
 # Dataset for handling prompts
@@ -150,7 +150,7 @@ class LocalMistralHandler:
         # Create an llm chain with LLM and prompt
         self.chain = self.prompt | self.local_model  # LCEL
 
-    '''
+    """
     def call_llm_local_MistralAI(self, prompt_template):
         self.monitor.start_monitoring_usage()
         
@@ -195,7 +195,7 @@ class LocalMistralHandler:
 
         self._set_config()
         return None, nt_in, nt_out, None, None
-    '''
+    """
     def call_llm_local_MistralAI(self, prompts, batch_size=4):
         self.monitor.start_monitoring_usage()
 

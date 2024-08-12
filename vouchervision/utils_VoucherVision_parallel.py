@@ -24,13 +24,13 @@ from vouchervision.model_maps import ModelMaps
 from vouchervision.general_utils import get_cfg_from_full_path
 from vouchervision.OCR_google_cloud_vision import OCREngine 
 
-'''
+"""
 * For the prefix_removal, the image names have 'MICH-V-' prior to the barcode, so that is used for matching
   but removed for output.
 * There is also code active to replace the LLM-predicted "Catalog Number" with the correct number since it is known.
   The LLMs to usually assign the barcode to the correct field, but it's not needed since it is already known.
         - Look for ####################### Catalog Number pre-defined
-'''
+"""
 
 
     
@@ -112,7 +112,7 @@ class VoucherVision():
         self.init_transcription_xlsx()
         self.init_trOCR_model()
 
-        '''Logging'''
+        """Logging"""
         self.logger.info(f'Transcribing dataset --- {self.dir_labels}')
         self.logger.info(f'Saving transcription batch to --- {self.path_transcription}')
         self.logger.info(f'Saving individual transcription files to --- {self.Dirs.transcription_ind}')
@@ -590,7 +590,7 @@ class VoucherVision():
         
 
     def write_json_to_file(self, filepath, data):
-        '''Writes dictionary data to a JSON file.'''
+        """Writes dictionary data to a JSON file."""
         with open(filepath, 'w') as txt_file:
             if isinstance(data, dict):
                 data = json.dumps(data, indent=4, sort_keys=False)
@@ -654,7 +654,7 @@ class VoucherVision():
         self.logger.info(f'Working on {image_index + 1}/{len(self.img_paths)} --- Finished OCR')
 
         if len(self.OCR) > 0:
-            ocr_google.overlay_image.save(jpg_file_path_OCR_helper)
+            ocr_google.image_ocr.save(jpg_file_path_OCR_helper)
 
             OCR_bounds = {}
             if ocr_google.hand_text_to_box_mapping is not None:

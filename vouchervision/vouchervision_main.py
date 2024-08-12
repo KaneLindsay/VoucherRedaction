@@ -1,6 +1,6 @@
-'''
+"""
 VoucherVision - based on LeafMachine2 Processes
-'''
+"""
 import os, inspect, sys, shutil
 from time import perf_counter
 # currentdir = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
@@ -17,7 +17,7 @@ from vouchervision.utils_VoucherVision import VoucherVision, space_saver
 # from vouchervision.utils_VoucherVision_parallel import VoucherVision, space_saver
 from vouchervision.utils_hf import upload_to_drive
 
-def voucher_vision(cfg_file_path, dir_home, path_custom_prompts, cfg_test, progress_report, json_report, path_api_cost=None, test_ind = None, is_hf = True, is_real_run=False):
+def voucher_vision(cfg_file_path, dir_home, path_custom_prompts, cfg_test, progress_report, json_report, path_api_cost=None, test_ind = None, is_hf = True, is_real_run=False, banned_words=[], redaction_granularity='line'):
     t_overall = perf_counter()
 
     # Load config file
@@ -29,7 +29,7 @@ def voucher_vision(cfg_file_path, dir_home, path_custom_prompts, cfg_test, progr
         cfg = cfg_test 
 
     # Check to see if there are subdirs
-    # Yes --> use the names of the subsirs as run_name
+    # Yes --> use the names of the subdirs as run_name
     run_name, dirs_list, has_subdirs = check_for_subdirs_VV(cfg)
     print(f"run_name {run_name} dirs_list{dirs_list} has_subdirs{has_subdirs}")
 
@@ -39,7 +39,6 @@ def voucher_vision(cfg_file_path, dir_home, path_custom_prompts, cfg_test, progr
     print_main_start("Creating Directory Structure")
     Dirs = Dir_Structure(cfg)
 
-    # logging.info("Hi")
     logger = start_logging(Dirs, cfg)
 
     # Check to see if required ML files are ready to use
@@ -63,7 +62,7 @@ def voucher_vision(cfg_file_path, dir_home, path_custom_prompts, cfg_test, progr
     crop_detections_from_images_VV(cfg, logger, dir_home, Project, Dirs)
 
     # Process labels
-    Voucher_Vision = VoucherVision(cfg, logger, dir_home, path_custom_prompts, Project, Dirs, is_hf)
+    Voucher_Vision = VoucherVision(cfg, logger, dir_home, path_custom_prompts, Project, Dirs, is_hf, banned_words, redaction_granularity)
     n_images = len(Voucher_Vision.img_paths)
     last_JSON_response, final_WFO_record, final_GEO_record, total_tokens_in, total_tokens_out, OCR_cost, OCR_tokens_in, OCR_tokens_out = Voucher_Vision.process_specimen_batch(progress_report, json_report, is_real_run)
 

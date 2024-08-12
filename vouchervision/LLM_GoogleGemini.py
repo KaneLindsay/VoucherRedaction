@@ -95,6 +95,7 @@ class GoogleGeminiHandler:
                                     max_output_tokens=self.config.get('max_output_tokens'),
                                     top_p=self.config.get('top_p'),
                                     temperature=self.config.get('temperature')
+                                    # google_api_key = os.environ['GOOGLE_API_KEY']
                                     )    
         # self.llm_model = VertexAI(model='gemini-1.0-pro', 
         #                           max_output_tokens=self.config.get('max_output_tokens'),

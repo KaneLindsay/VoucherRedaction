@@ -16,14 +16,14 @@ except:
     from model_maps import ModelMaps
 
 
-'''
+"""
 TIFF --> DNG
 Install
 https://helpx.adobe.com/camera-raw/using/adobe-dng-converter.html
 Read
 https://helpx.adobe.com/content/dam/help/en/photoshop/pdf/dng_commandline.pdf
 
-'''
+"""
 
 
 # https://stackoverflow.com/questions/287871/how-do-i-print-colored-text-to-the-terminal
@@ -674,23 +674,6 @@ def print_main_info(message):
     # end_white_space = " " * end
     print(f"{bcolors.CGREYBG}{white_space}{message}{end}{bcolors.ENDC}")
     
-# def report_config(dir_home, cfg_file_path):
-#     print_main_start("Loading Configuration File")
-#     if cfg_file_path == None:
-#         print_main_info(''.join([os.path.join(dir_home, 'LeafMachine2.yaml')]))
-#     elif cfg_file_path == 'test_installation':
-#         print_main_info(''.join([os.path.join(dir_home, 'demo','LeafMachine2_demo.yaml')]))
-#     else:
-#         print_main_info(cfg_file_path)
-
-# def report_config_VV(dir_home, cfg_file_path):
-#     print_main_start("Loading Configuration File")
-#     if cfg_file_path == None:
-#         print_main_info(''.join([os.path.join(dir_home, 'VoucherVision.yaml')]))
-#     elif cfg_file_path == 'test_installation':
-#         print_main_info(''.join([os.path.join(dir_home, 'demo','VoucherVision_demo.yaml')]))
-#     else:
-#         print_main_info(cfg_file_path)
 
 def report_config(dir_home, cfg_file_path, system='VoucherVision'):
     print_main_start("Loading Configuration File")
@@ -815,26 +798,6 @@ def subset_dir_images(cfg, Project, Dirs):
     else:
         return Project
 
-'''# Define function to be executed by each worker
-def worker_crop(rank, cfg, dir_home, Project, Dirs):
-    # Set worker seed based on rank
-    np.random.seed(rank)
-    # Call function for this worker
-    crop_detections_from_images(cfg, dir_home, Project, Dirs)
-
-def crop_detections_from_images(cfg, dir_home, Project, Dirs):
-    num_workers = 6
-    
-    # Initialize and start worker processes
-    processes = []
-    for rank in range(num_workers):
-        p = mp.Process(target=worker_crop, args=(rank, cfg, dir_home, Project, Dirs))
-        p.start()
-        processes.append(p)
-
-    # Wait for all worker processes to finish
-    for p in processes:
-        p.join()'''
 
 def crop_detections_from_images_worker_VV(filename, analysis, Project, Dirs, save_per_image, save_per_class, save_list, binarize_labels):
     try:
@@ -856,7 +819,7 @@ def crop_detections_from_images_worker_VV(filename, analysis, Project, Dirs, sav
 
     if has_archival and (save_per_image or save_per_class):
         crop_component_from_yolo_coords_VV('ARCHIVAL', Dirs, analysis, archival, full_image, filename, save_per_image, save_per_class, save_list)
- 
+
 def crop_detections_from_images_worker(filename, analysis, Project, Dirs, save_per_image, save_per_class, save_list, binarize_labels):
     try:
         full_image = cv2.imread(os.path.join(Project.dir_images, '.'.join([filename, 'jpg'])))
@@ -1033,7 +996,7 @@ def crop_detections_from_images_VV(cfg, logger, dir_home, Project, Dirs, batch_s
 #     t2_stop = perf_counter()
 #     logger.info(f"Save cropped components --- elapsed time: {round(t2_stop - t2_start)} seconds")
 
-'''
+"""
 # Single threaded
 def crop_detections_from_images(cfg, dir_home, Project, Dirs):
     if cfg['leafmachine']['cropped_components']['do_save_cropped_annotations']:
@@ -1067,7 +1030,7 @@ def crop_detections_from_images(cfg, dir_home, Project, Dirs):
                     crop_component_from_yolo_coords('ARCHIVAL', Dirs, analysis, archival, full_image, filename, save_per_image, save_per_class, save_list)
                 if has_plant and (save_per_image or save_per_class):
                     crop_component_from_yolo_coords('PLANT', Dirs, analysis, plant, full_image, filename, save_per_image, save_per_class, save_list)
-'''
+"""
 
 
 def process_detections(success, save_list, detections, detection_type, height, width, min_x, min_y, max_x, max_y):

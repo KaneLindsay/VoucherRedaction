@@ -7,12 +7,14 @@ import numpy as np
 from itertools import chain
 from PIL import Image
 import pandas as pd
-from typing import Union
 from streamlit_extras.let_it_rain import rain
 from annotated_text import annotated_text
+
 from vouchervision.LeafMachine2_Config_Builder import write_config_file
-from vouchervision.VoucherVision_Config_Builder import build_VV_config, run_demo_tests_GPT, run_demo_tests_Palm , TestOptionsGPT, TestOptionsPalm, check_if_usable, run_api_tests
+from vouchervision.VoucherVision_Config_Builder import build_VV_config, TestOptionsGPT, TestOptionsPalm, check_if_usable # run_api_tests
+
 from vouchervision.vouchervision_main import voucher_vision, voucher_vision_OCR_test
+
 from vouchervision.general_utils import test_GPU, get_cfg_from_full_path, summarize_expense_report, create_google_ocr_yaml_config, validate_dir
 from vouchervision.model_maps import ModelMaps
 from vouchervision.API_validation import APIvalidation
@@ -358,7 +360,7 @@ def rain_emojis(test_results):
     #     'test10': False,  # Test failed
     # }
     success_emojis = ["🥇", "🏆", "🍾", "🙌"]
-    failure_emojis = ["💔", "😭"]
+    failure_emojis = ["💩", "😭"]
 
     success_count = sum(1 for result in test_results.values() if result)
     failure_count = len(test_results) - success_count
@@ -529,25 +531,26 @@ def create_private_file():
         with st.container():
             with c_button_ocr:
                 st.write("##")
-                st.button("Test OCR", on_click=test_API, args=['google_vision',c_in_ocr, cfg_private,openai_api_key,azure_openai_api_version,azure_openai_api_key,
+                # on_click=test_API
+                st.button("Test OCR", on_click=None, args=['google_vision',c_in_ocr, cfg_private,openai_api_key,azure_openai_api_version,azure_openai_api_key,
                                                                     azure_openai_api_base,azure_openai_organization,azure_openai_api_type,google_vision,google_palm])
 
         with st.container():
             with c_button_openai:
                 st.write("##")
-                st.button("Test OpenAI", on_click=test_API, args=['openai',c_in_openai, cfg_private,openai_api_key,azure_openai_api_version,azure_openai_api_key,
+                st.button("Test OpenAI", on_click=None, args=['openai',c_in_openai, cfg_private,openai_api_key,azure_openai_api_version,azure_openai_api_key,
                                                                     azure_openai_api_base,azure_openai_organization,azure_openai_api_type,google_vision,google_palm])
                 
         with st.container():
             with c_button_azure:
                 st.write("##")
-                st.button("Test Azure OpenAI", on_click=test_API, args=['azure_openai',c_in_azure, cfg_private,openai_api_key,azure_openai_api_version,azure_openai_api_key,
+                st.button("Test Azure OpenAI", on_click=None, args=['azure_openai',c_in_azure, cfg_private,openai_api_key,azure_openai_api_version,azure_openai_api_key,
                                                                     azure_openai_api_base,azure_openai_organization,azure_openai_api_type,google_vision,google_palm])
                 
         with st.container():
             with c_button_palm:
                 st.write("##")
-                st.button("Test PaLM 2", on_click=test_API, args=['palm',c_in_palm, cfg_private,openai_api_key,azure_openai_api_version,azure_openai_api_key,
+                st.button("Test PaLM 2", on_click=None, args=['palm',c_in_palm, cfg_private,openai_api_key,azure_openai_api_version,azure_openai_api_key,
                                                                     azure_openai_api_base,azure_openai_organization,azure_openai_api_type,google_vision,google_palm])
 
 
@@ -557,67 +560,69 @@ def create_private_file():
             st.session_state.proceed_to_private = False
             st.session_state.proceed_to_main = True
 
-def test_API(api, message_loc, cfg_private,openai_api_key,azure_openai_api_version,azure_openai_api_key, azure_openai_api_base,azure_openai_organization,azure_openai_api_type,google_vision,google_palm):
-    # Save the API keys
-    save_changes_to_API_keys(cfg_private,openai_api_key,azure_openai_api_version,azure_openai_api_key,azure_openai_api_base,azure_openai_organization,azure_openai_api_type,google_vision,google_palm)
-    
-    with st.spinner('Performing validation checks...'):
-        if api == 'google_vision':
-            print("*** Google Vision OCR API Key ***")
-            try:
-                demo_config_path = os.path.join(st.session_state.dir_home,'demo','validation_configs','google_vision_ocr_test.yaml')
-                demo_images_path = os.path.join(st.session_state.dir_home, 'demo', 'demo_images')
-                demo_out_path = os.path.join(st.session_state.dir_home, 'demo', 'demo_output','run_name')
-                create_google_ocr_yaml_config(demo_config_path, demo_images_path, demo_out_path)
-                voucher_vision_OCR_test(demo_config_path, st.session_state.dir_home, None, demo_images_path)
-                with message_loc:
-                    st.success("Google Vision OCR API Key Valid :white_check_mark:")
-                return True
-            except Exception as e:
-                with message_loc:
-                    st.error(f"Google Vision OCR API Key Failed! {e}")
-                return False
-            
-        elif api == 'openai':
-            print("*** OpenAI API Key ***")
-            try:
-                if run_api_tests('openai'):
-                    with message_loc:
-                        st.success("OpenAI API Key Valid :white_check_mark:")
-                else:
-                    with message_loc:
-                        st.error("OpenAI API Key Failed:exclamation:")
-                    return False
-            except Exception as e:
-                with message_loc:
-                    st.error(f"OpenAI API Key Failed:exclamation: {e}")
+# TODO: Provide a replacement implementation for testing API
 
-        elif api == 'azure_openai':
-            print("*** Azure OpenAI API Key ***")
-            try:
-                if run_api_tests('azure_openai'):
-                    with message_loc:
-                        st.success("Azure OpenAI API Key Valid :white_check_mark:")
-                else:
-                    with message_loc:
-                        st.error(f"Azure OpenAI API Key Failed:exclamation:")
-                    return False
-            except Exception as e:
-                with message_loc:
-                    st.error(f"Azure OpenAI API Key Failed:exclamation: {e}")
-        elif api == 'palm':
-            print("*** Google PaLM 2 API Key ***")
-            try:
-                if run_api_tests('palm'):
-                    with message_loc:
-                        st.success("Google PaLM 2 API Key Valid :white_check_mark:")
-                else:
-                    with message_loc:
-                        st.error("Google PaLM 2 API Key Failed:exclamation:")
-                    return False
-            except Exception as e:
-                with message_loc:
-                    st.error(f"Google PaLM 2 API Key Failed:exclamation: {e}")
+# def test_API(api, message_loc, cfg_private,openai_api_key,azure_openai_api_version,azure_openai_api_key, azure_openai_api_base,azure_openai_organization,azure_openai_api_type,google_vision,google_palm):
+#     # Save the API keys
+#     save_changes_to_API_keys(cfg_private,openai_api_key,azure_openai_api_version,azure_openai_api_key,azure_openai_api_base,azure_openai_organization,azure_openai_api_type,google_vision,google_palm)
+    
+#     with st.spinner('Performing validation checks...'):
+#         if api == 'google_vision':
+#             print("*** Google Vision OCR API Key ***")
+#             try:
+#                 demo_config_path = os.path.join(st.session_state.dir_home,'demo','validation_configs','google_vision_ocr_test.yaml')
+#                 demo_images_path = os.path.join(st.session_state.dir_home, 'demo', 'demo_images')
+#                 demo_out_path = os.path.join(st.session_state.dir_home, 'demo', 'demo_output','run_name')
+#                 create_google_ocr_yaml_config(demo_config_path, demo_images_path, demo_out_path)
+#                 voucher_vision_OCR_test(demo_config_path, st.session_state.dir_home, None, demo_images_path)
+#                 with message_loc:
+#                     st.success("Google Vision OCR API Key Valid :white_check_mark:")
+#                 return True
+#             except Exception as e:
+#                 with message_loc:
+#                     st.error(f"Google Vision OCR API Key Failed! {e}")
+#                 return False
+            
+#         elif api == 'openai':
+#             print("*** OpenAI API Key ***")
+#             try:
+#                 if run_api_tests('openai'):
+#                     with message_loc:
+#                         st.success("OpenAI API Key Valid :white_check_mark:")
+#                 else:
+#                     with message_loc:
+#                         st.error("OpenAI API Key Failed:exclamation:")
+#                     return False
+#             except Exception as e:
+#                 with message_loc:
+#                     st.error(f"OpenAI API Key Failed:exclamation: {e}")
+
+#         elif api == 'azure_openai':
+#             print("*** Azure OpenAI API Key ***")
+#             try:
+#                 if run_api_tests('azure_openai'):
+#                     with message_loc:
+#                         st.success("Azure OpenAI API Key Valid :white_check_mark:")
+#                 else:
+#                     with message_loc:
+#                         st.error(f"Azure OpenAI API Key Failed:exclamation:")
+#                     return False
+#             except Exception as e:
+#                 with message_loc:
+#                     st.error(f"Azure OpenAI API Key Failed:exclamation: {e}")
+#         elif api == 'palm':
+#             print("*** Google PaLM 2 API Key ***")
+#             try:
+#                 if run_api_tests('palm'):
+#                     with message_loc:
+#                         st.success("Google PaLM 2 API Key Valid :white_check_mark:")
+#                 else:
+#                     with message_loc:
+#                         st.error("Google PaLM 2 API Key Failed:exclamation:")
+#                     return False
+#             except Exception as e:
+#                 with message_loc:
+#                     st.error(f"Google PaLM 2 API Key Failed:exclamation: {e}")
        
 
 def save_changes_to_API_keys(cfg_private,openai_api_key,azure_openai_api_version,azure_openai_api_key,

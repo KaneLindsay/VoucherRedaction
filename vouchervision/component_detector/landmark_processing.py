@@ -192,7 +192,7 @@ class LeafSkeleton:
                     cv2.circle(self.image, tuple(point.astype(int)), radius=1, color=(255, 255, 255), thickness=-1)
 
 
-    '''def split_image_by_midvein(self): # cubic
+    """def split_image_by_midvein(self): # cubic
         if self.file_name == 'B_774373024_Ebenaceae_Diospyros_glutinifera__L__469-164-888-632':
             print('hi')
         if self.has_midvein:
@@ -241,7 +241,7 @@ class LeafSkeleton:
             y_vals = self.midvein_fit[0] * x_vals**3 + self.midvein_fit[1] * x_vals**2 + self.midvein_fit[2] * x_vals + self.midvein_fit[3]
 
             self.midvein_fit_points = np.column_stack((x_vals, y_vals))
-            self.is_split = True'''
+            self.is_split = True"""
 
 
 
@@ -1068,9 +1068,9 @@ class LeafSkeleton:
 
 
     def restrict_by_width_relation(self, line_params):
-        '''
+        """
         Are the tips on the same side
-        '''
+        """
         if self.has_lamina_base and self.has_lamina_tip:
             loc_tip = self.point_position_relative_to_line(self.lamina_tip, line_params)
             loc_base = self.point_position_relative_to_line(self.lamina_base, line_params)
@@ -1086,9 +1086,9 @@ class LeafSkeleton:
             else:
                 self.logger.debug(f'Restrictions [Lamina Tip/Base] - pass - Lamina tip and base are on opposite side')
 
-        '''
+        """
         are all apex and base values on their respecitive sides?
-        '''
+        """
         self.has_valid_apex_loc = False
         self.has_valid_base_loc = False
         apex_side = 'NA'
@@ -1144,9 +1144,9 @@ class LeafSkeleton:
             self.logger.debug(f'Restrictions [Angles] - no change')
             
 
-        '''
+        """
         does the petiole cross the width loc?
-        '''
+        """
         if self.has_ordered_petiole:
             petiole_check = []
             for point in self.ordered_petiole:
@@ -1165,10 +1165,10 @@ class LeafSkeleton:
         else:
             self.logger.debug(f'Restrictions [Petiole] - has_ordered_petiole = False')
 
-        '''
+        """
         Is the lamina base on the same side as the petiole?
             happens after the other checks...
-        '''
+        """
         if self.has_lamina_base and self.has_lamina_tip and self.has_ordered_petiole:
             # base is not on the same side as petiole, swap IF base and tip are already opposite
             if loc_base != petiole_check:
@@ -1314,7 +1314,7 @@ class LeafSkeleton:
         # Remove the closest point from the list of points
         return far_point, points
 
-    '''def point_position_relative_to_line(self, point, line_params):
+    """def point_position_relative_to_line(self, point, line_params):
         # Extract the cubic coefficients from the line parameters
         a, b, c, d = line_params
 
@@ -1341,7 +1341,8 @@ class LeafSkeleton:
             if point[1] < a*mid_x**3 + b*mid_x**2 + c*mid_x + d:
                 return "left"
             else:
-                return "right"'''
+                return "right"
+        """
 
     def point_position_relative_to_line(self, point, line_params):
         # Extract the slope and y-intercept from the line parameters
@@ -1503,7 +1504,7 @@ class LeafSkeleton:
         theta = np.arccos(cos_theta)
         return abs(theta) > np.pi / 2
 
-    '''def check_momentum_complex(self, coords, info, start_or_end):
+    """def check_momentum_complex(self, coords, info, start_or_end):
         original_coords = coords
         # find middle index of coordinates
         mid_idx = len(coords) // 2
@@ -1551,7 +1552,7 @@ class LeafSkeleton:
         if info:
             return new_coords, len(original_coords) != len(new_coords) or second_first_change or second_last_change
         else:
-            return new_coords'''
+            return new_coords"""
 
     def check_momentum_complex(self, coords, info, start_or_end): # Works, but removes ALL points after momentum change
         original_coords = coords
@@ -1641,7 +1642,7 @@ class LeafSkeleton:
         else:
             return new_coords
 
-    '''def check_momentum_complex(self, coords, info, start_or_end): # does not seem to work
+    """def check_momentum_complex(self, coords, info, start_or_end): # does not seem to work
         original_coords = coords
         
         # get directional vectors for first-middle, middle-last, and second-first and second-last pairs of points
@@ -1691,7 +1692,7 @@ class LeafSkeleton:
         if info:
             return new_coords, len(original_coords) != len(new_coords) #or second_first_change or second_last_change or endpoint_diff
         else:
-            return new_coords'''
+            return new_coords"""
 
 
 

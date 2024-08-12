@@ -23,23 +23,23 @@ from concurrent.futures import ThreadPoolExecutor as th
 
 from vouchervision.general_utils import bcolors, validate_dir
 
-'''
+"""
 For download parallelization, I followed this guide https://rednafi.github.io/digressions/python/2020/04/21/python-concurrent-futures.html
-'''
+"""
 
-'''
+"""
 ####################################################################################################
 Read config files
 ####################################################################################################
-'''
+"""
 def get_cfg_from_full_path(path_cfg):
     with open(path_cfg, "r") as ymlfile:
         cfg = yaml.full_load(ymlfile)
     return cfg
 
-'''
+"""
 Classes
-'''
+"""
 @dataclass
 class ImageCandidate:
     cfg: str = ''
@@ -400,11 +400,11 @@ class ImageCandidateCustom:
                 print(f"{bcolors.OKCYAN}                SKIP: {image_path}{bcolors.ENDC}")
 
 
-'''
+"""
 ####################################################################################################
 General Functions
 ####################################################################################################
-'''
+"""
 # If image is larger than MP max, downsample to have long side = 5000
 def calc_resize(w,h):
     if h > w:
@@ -433,11 +433,11 @@ def check_n_images_in_group(detailedOcc,N):
 
 
 
-'''
+"""
 ####################################################################################################
 Functions for --> download_GBIF_from_user_file.py
 ####################################################################################################
-'''
+"""
 
 # def download_subset_images_user_file(dir_home,dir_destination,n_already_downloaded,MP_low,MP_high,wishlist,filename_occ,filename_img):
 #     # (dirWishlists,dirNewImg,alreadyDownloaded,MP_Low,MP_High,wishlist,aggOcc_filename,aggImg_filename):
@@ -628,12 +628,12 @@ def ingest_DWC(DWC_csv_or_txt_file,dir_home):
         print(f"{bcolors.FAIL}DWC file {DWC_csv_or_txt_file} is not '.txt' or '.csv' and was not opened{bcolors.ENDC}")
     return df
     
-'''
+"""
 #######################################################################
 Main function for the config_download_from_GBIF_all_images_in_file.yml
 see yml for details
 #######################################################################
-'''
+"""
 def download_all_images_in_images_csv_multiDirs(cfg):
     dir_destination_parent = cfg['dir_destination_images']
     dir_destination_csv = cfg['dir_destination_csv']

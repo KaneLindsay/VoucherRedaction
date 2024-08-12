@@ -1,4 +1,4 @@
-'''
+"""
 ###################################################################
 ##########################  chatGPT  ##############################
 ###################################################################
@@ -18,7 +18,7 @@ Prompts for chatGPT
 ###################################################################
 ##########################  chatGPT  ##############################
 ###################################################################
-'''
+"""
 
 def PROMPT_UMICH_skeleton_all_asia(OCR, domain_knowledge_example, similarity):
     set_rules = """1. Your job is to return a new dict based on the structure of the reference dict ref_dict and these are your rules. 
@@ -422,7 +422,7 @@ def PROMPT_OCR_Organized_GPT4(OCR):
     
     return prompt
 
-'''
+"""
 ###################################################################
 #########################  PaLM  ##################################
 ###################################################################
@@ -453,7 +453,7 @@ Prompts for PaLM
 ###################################################################
 #########################  PaLM  ##################################
 ###################################################################
-'''
+"""
 def PROMPT_PaLM_UMICH_skeleton_all_asia(OCR, in_list, out_list):
     set_rules = """1. Your job is to return a new dict based on the structure of the reference dict ref_dict and these are your rules. 
                     2. You must look at ref_dict and refactor the new text called OCR to match the same formatting. 
@@ -603,7 +603,7 @@ def PROMPT_PaLM_Redo(bad_response):
     ex_1_in = """{"TAXONOMY": {"species": "Quercus Robur C.", "common name": "Ch\u00eane Robur."} "GEOGRAPHY": "location": "Bord d'un chemin, Rymenam (Ann.), BRUXELLES"}, "LOCALITY": {"distance": "300 centimeters", "surroundings": "Botanic Garden, Golden Thread", "miscellaneous": "I, 500 200, inches, 600 300, 700 400, is per inch (opticn), 800 500, 850 550"}, "COLLECTING": {"date": "1867-07-07", "collection number": "Acc. 1919", "habitat": "HERBIER DU JARDIN BOTANIQUE DE L'\u00c9TAT"}, "MISCELLANEOUS": {}}"""
     ex_1_out = """{"TAXONOMY": {"species": "Quercus Robur C.", "common name": "Ch\u00eane Robur."}, "GEOGRAPHY": {"location": "Bord d'un chemin, Rymenam (Ann.), BRUXELLES"}, "LOCALITY": {"distance": "300 centimeters", "surroundings": "Botanic Garden, Golden Thread", "miscellaneous": "I, 500 200, inches, 600 300, 700 400, is per inch (opticn), 800 500, 850 550"}, "COLLECTING": {"date": "1867-07-07", "collection number": "Acc. 1919", "habitat": "HERBIER DU JARDIN BOTANIQUE DE L'\u00c9TAT"}, "MISCELLANEOUS": {}}"""
 
-    '''for just skipping the verbatim coordinates'''
+    """for just skipping the verbatim coordinates"""
     ex_2_in = """{"Genus": "Forchammeria", "Species": "Watsonii", "subspecies": "", "vari"ety": "", "forma": "", "Country": "Mexico", "State": "Baja California Sur", "County": "Cerralvo Island", "Locality Name": "South end of Cerralvo Island", "Min Elevation": "", "Max Elevation": "", "Elevation Units": "", "Datum": "", "Cultivated": "", "Habitat": "", "Collectors": "Reid Moran", "Collector Number": "3592", "Verbatim Date": "3. April... 1952", "End Date": ""}"""
     ex_2_out = """{"Genus": "Forchammeria", "Species": "Watsonii", "subspecies": "", "variety": "", "forma": "", "Country": "Mexico", "State": "Baja California Sur", "County": "Cerralvo Island", "Locality Name": "South end of Cerralvo Island", "Min Elevation": "", "Max Elevation": "", "Elevation Units": "", "Datum": "", "Cultivated": "", "Habitat": "", "Collectors": "Reid Moran", "Collector Number": "3592", "Verbatim Date": "3. April... 1952", "End Date": ""}"""
     
@@ -613,7 +613,7 @@ def PROMPT_PaLM_Redo(bad_response):
     ex_4_in = """{"Genus": "Forchammeria", "Species": "Watsonii", "subspecies": "", "variety": "", "forma": "", "Country": "Mexico", "State": "Baja California Sur", "County": "Cerralvo Island", "Locality Name": "South end of Cerralvo Island", "Min Elevation": "", "Max Elevation": "", "Elevation Units": "" "Datum": "", "Cultivated": "", "Habitat": "", "Collectors": "Reid Moran", "Collector Number": "3592", "Verbatim Date": "3. April... 1952", "End Date": ""}"""
     ex_4_out = """{"Genus": "Forchammeria", "Species": "Watsonii", "subspecies": "", "variety": "", "forma": "", "Country": "Mexico", "State": "Baja California Sur", "County": "Cerralvo Island", "Locality Name": "South end of Cerralvo Island", "Min Elevation": "", "Max Elevation": "", "Elevation Units": "", "Datum": "", "Cultivated": "", "Habitat": "", "Collectors": "Reid Moran", "Collector Number": "3592", "Verbatim Date": "3. April... 1952", "End Date": ""}"""
     
-    '''for trying to fix the escape chars'''
+    """for trying to fix the escape chars"""
     # ex_2_in = """{"Genus": "Forchammeria", "Species": "Watsonii", "subspecies": "", "vari"ety": "", "forma": "", "Country": "Mexico", "State": "Baja California Sur", "County": "Cerralvo Island", "Locality Name": "South end of Cerralvo Island", "Min Elevation": "", "Max Elevation": "", "Elevation Units": "", "Verbatim Coordinates": "", "Datum": "", "Cultivated": "", "Habitat": "", "Collectors": "Reid Moran", "Collector Number": "3592", "Verbatim Date": "3. April... 1952", "End Date": ""}"""
     # ex_2_out = """{"Genus": "Forchammeria", "Species": "Watsonii", "subspecies": "", "variety": "", "forma": "", "Country": "Mexico", "State": "Baja California Sur", "County": "Cerralvo Island", "Locality Name": "South end of Cerralvo Island", "Min Elevation": "", "Max Elevation": "", "Elevation Units": "", "Verbatim Coordinates": "", "Datum": "", "Cultivated": "", "Habitat": "", "Collectors": "Reid Moran", "Collector Number": "3592", "Verbatim Date": "3. April... 1952", "End Date": ""}"""
     

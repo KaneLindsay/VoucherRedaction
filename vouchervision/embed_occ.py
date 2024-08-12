@@ -17,7 +17,7 @@ from vouchervision.general_utils import get_cfg_from_full_path
 from prompts import PROMPT_UMICH_skeleton_all_asia
 from vouchervision.LLM_OpenAI import num_tokens_from_string, OCR_to_dict
 
-'''
+"""
 This generates OpenAI embedding. These are no longer used by VoucherVision.
 We have transitioned to "hkunlp/instructor-xl"
 
@@ -25,7 +25,7 @@ Please see: https://huggingface.co/hkunlp/instructor-xl
 
 This file has  some experimentation code that can be helpful to reference, 
 but is no relevant to VoucherVision.
-'''
+"""
 
 class GenerateEmbeddings:
     def __init__(self, file_occ, file_name, dir_out="D:/D_Desktop/embedding"):
@@ -154,7 +154,7 @@ def old_method(img_path):
     file_name = 'test_occ'
     dir_out = "D:/D_Desktop/embedding"
 
-    '''
+    """
     if do_create:
         create_embeddings(file_occ, file_name, dir_out)
     
@@ -168,7 +168,7 @@ def old_method(img_path):
     search_query = "1971 The Buff"
     results = embedder.search_rows(dwc_headers, embedded_df, search_query, n=1)
     print(results)
-    '''
+    """
     GPT_response = OCR_to_dict(img_path)
     print(GPT_response)
 

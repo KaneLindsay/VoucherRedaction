@@ -882,7 +882,7 @@ class ArmatureSkeleton:
 
     
     ### Smoothest
-    '''
+    """
     def angle_between_points(self, p1, p2, p3):
         v1 = np.array([p1[0] - p2[0], p1[1] - p2[1]])
         v2 = np.array([p3[0] - p2[0], p3[1] - p2[1]])
@@ -913,7 +913,7 @@ class ArmatureSkeleton:
                 best_tour = tour
 
         return best_tour
-    '''
+    """
     ### ^^^ Smoothest
 
 

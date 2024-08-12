@@ -480,11 +480,11 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 
 @dataclass
 class TrainOptions:
-    '''
+    """
     Default training values
         Increase or decrease batch_size, n_gpu, n_workers according to machine specs
-    '''
-    '''
+    """
+    """
     python /home/brlab/Dropbox/LM2_Env/YOLOv5/yolov5/train.py 
     --data /home/brlab/Dropbox/LM2_Env/YOLOv5/datasets/PLANT_Botany_Small/PLANT_Botany_Small.yaml 
     --project PLANT_Botany 
@@ -494,7 +494,7 @@ class TrainOptions:
     --batch 14 
     --epochs 300 
     --cache
-    '''
+    """
     # Parameters
     data: str = '' #', type=str, default=ROOT / 'data/coco128.yaml', help='dataset.yaml path')
     project: str = 'runs/train'  #', default=ROOT / 'runs/train', help='save to project/name')   
@@ -557,15 +557,15 @@ class TrainOptions:
     entity: str = field(init=False)
 
     def __post_init__(self) -> None:
-        '''
+        """
         Setup
-        '''
+        """
         self.new_time = get_datetime()
         self.base_architecture = self.weights.split('.')[0] 
         self.freeze = [0]
-        '''
+        """
         Configure names
-        '''
+        """
         dir_home = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         path_cfg_private = os.path.join(dir_home,'PRIVATE_DATA.yaml')
         self.cfg_private = get_cfg_from_full_path(path_cfg_private)
@@ -588,10 +588,10 @@ class TrainOptions:
             # else:
             #     self.dir_out = self.cfg['leafmachine']['component_detector_train']['dir_out']
 
-        '''
+        """
         Weights and Biases Info
         https://wandb.ai/site
-        '''
+        """
         if self.cfg_private['w_and_b']['w_and_b_key'] is not None:
             self.w_and_b_key = self.cfg_private['w_and_b']['w_and_b_key']
 
@@ -611,9 +611,9 @@ class TrainOptions:
         if self.cfg_private['w_and_b']['entity'] is not None:
             self.entity = self.cfg_private['w_and_b']['entity']
         
-        '''
+        """
         Model Options
-        '''
+        """
         # Parameters
         if self.cfg['leafmachine']['component_detector_train']['model_options']['data'] is not None:
             self.data = self.cfg['leafmachine']['component_detector_train']['model_options']['data']

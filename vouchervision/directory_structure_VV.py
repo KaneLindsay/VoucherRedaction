@@ -54,27 +54,7 @@ class Dir_Structure():
         # Logging
         self.path_log = os.path.join(self.dir_project,'Logs')
         validate_dir(self.path_log)
-
-        # self.custom_overlay_pdfs = os.path.join(self.dir_project,'Summary','Custom_Overlay_PDFs')
-        # self.custom_overlay_images = os.path.join(self.dir_project,'Summary','Custom_Overlay_Images')
-
-        ###
-        # self.custom_overlay_pdfs = os.path.join(self.dir_project,'Summary','Custom_Overlay_PDFs')
-        # if cfg['leafmachine']['overlay']['save_overlay_to_pdf']:
-        #     validate_dir(self.custom_overlay_pdfs)
-
-        # self.custom_overlay_images = os.path.join(self.dir_project,'Summary','Custom_Overlay_Images')
-        # if cfg['leafmachine']['overlay']['save_overlay_to_jpgs']:
-        #     validate_dir(self.custom_overlay_images)
-
-        ### Rulers
-        # self.ruler_info = os.path.join(self.dir_project,'Archival_Components','Ruler_Info')  
-        # self.ruler_validation_summary =  os.path.join(self.dir_project,'Archival_Components','Ruler_Info', 'Ruler_Validation_Summary')
-        # self.ruler_validation = os.path.join(self.dir_project,'Archival_Components','Ruler_Info', 'Ruler_Validation')
-        # self.ruler_processed = os.path.join(self.dir_project,'Archival_Components','Ruler_Info', 'Ruler_Processed')
-        # validate_dir(self.ruler_info)
         
-
         validate_dir(os.path.join(self.path_archival_components, 'JSON'))
         validate_dir(os.path.join(self.path_archival_components, 'labels'))
 
@@ -83,15 +63,13 @@ class Dir_Structure():
         validate_dir(self.transcription)
         self.transcription_ind = os.path.join(self.dir_project,'Transcription','Individual') 
         validate_dir(self.transcription_ind)
-        # self.transcription_ind_helper = os.path.join(self.dir_project,'Transcription','Individual_Helper_Content') 
-        # validate_dir(self.transcription_ind_helper)
+
         self.transcription_ind_OCR = os.path.join(self.dir_project,'Transcription','Individual_OCR') 
         validate_dir(self.transcription_ind_OCR)
         self.transcription_ind_OCR_bounds = os.path.join(self.dir_project,'Transcription','Individual_OCR_Bounds') 
         validate_dir(self.transcription_ind_OCR_bounds)
         self.transcription_ind_OCR_helper = os.path.join(self.dir_project,'Transcription','Individual_OCR_Helper') 
         validate_dir(self.transcription_ind_OCR_helper)
-
         self.transcription_ind_wiki = os.path.join(self.dir_project,'Transcription','Individual_Wikipedia') 
         validate_dir(self.transcription_ind_wiki)
 
@@ -100,7 +78,8 @@ class Dir_Structure():
         self.transcription_prompt = os.path.join(self.dir_project,'Transcription','Prompt_Template') 
         validate_dir(self.transcription_prompt)
 
-        
+        self.ind_redaction = os.path.join(self.dir_project, 'Redaction', 'Individual_Redacted')
+        validate_dir(self.ind_redaction)
 
         self.save_original = os.path.join(self.dir_project,'Original_Images') 
         validate_dir(self.save_original)
@@ -114,8 +93,6 @@ class Dir_Structure():
             validate_dir(self.save_per_annotation_class)
         if cfg['leafmachine']['cropped_components']['binarize_labels']:
             validate_dir(self.save_per_annotation_class)
-            # self.binarize_labels = os.path.join(self.dir_project,'Cropped_Images', 'By_Class','label_binary') 
-            # validate_dir(self.binarize_labels)
 
     def __add_time_to_existing_project_dir(self) -> None:
         path = pathlib.Path(self.dir_project)

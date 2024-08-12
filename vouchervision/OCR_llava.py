@@ -18,7 +18,7 @@ from vouchervision.LLaVA.llava.mm_utils import tokenizer_image_token, get_model_
 
 from vouchervision.utils_LLM import SystemLoadMonitor
 
-'''
+"""
 Performance expectations system: 
     GPUs:
         2x RTX6000 Ada 
@@ -86,7 +86,7 @@ LLaVA Models:
             --- VRAM ~10 GB
 
 
-'''
+"""
 
 # OCR_Llava = OCRLlava()
 # image, caption = OCR_Llava.transcribe_image("path/to/image.jpg", "Describe this image.")
