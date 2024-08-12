@@ -1,6 +1,6 @@
-# VoucherVision
+# VoucherRedaction ([VoucherVision](https://github.com/Gene-Weaver/VoucherVision/) + Redaction)
 
-[![VoucherVision](https://LeafMachine.org/img/VV_Logo.png "VoucherVision")](https://LeafMachine.org/)
+![VoucherVision](img/logo.png)
 
 Table of Contents
 =================
@@ -47,6 +47,7 @@ For inquiries, feedback (or if you want to get involved!) [please complete our f
 Initiated by the **University of Michigan Herbarium**, VoucherVision harnesses the power of large language models (LLMs) to transform the transcription process of natural history specimen labels. Our workflow is as follows:
 - Text extraction from specimen labels with **LeafMachine2**.
 - Text interpretation using **Google Vision OCR**.
+- *Text redaction* using **RoBERTa for Sequence Classification**
 - LLMs, including ***GPT-3.5***, ***GPT-4***, ***PaLM 2***, and Azure instances of OpenAI models, standardize the OCR output into a consistent spreadsheet format. This data can then be integrated into various databases like Specify, Symbiota, and BRAHMS.
   
 For ensuring accuracy and consistency, the [VoucherVisionEditor](https://github.com/Gene-Weaver/VoucherVisionEditor) serves as a quality control tool.
@@ -57,92 +58,62 @@ Thanks to all of our collaborating institutions!
 
 ## Roadmap and New Features List
 
-#### VoucherVision
-- [X] Update all GPT models
-- [X] Option to zip output files for simpler import into VVE
-- [x] Expense tracking
-    - [x] Dashboard
-    - [X] More granular support for different GPT versions
-    - [x] Project-based and cummulative tracking
-- [x] Hugging Face Spaces
-    - [x] Working and refactored
-    - [x] Unified with local version
-    - [X] Visualize locations on a map (verbatim and decimal)
-    - [x] Tested with batch of 300 images
-    - [ ] Optimize for +300 images at a time (not recommended unless paying for HF persistent storage)
-- [x] Modular Prompt Builder
-    - [x] Build, save, load, submit to VV library
-    - [ ] Test whether order of column matters
-    - [X] Provide 3 standard prompts: long, medium, short
-    - [ ] Test shorter prompt effectiveness
-- [X] API Availability Test/Visualization
-    - [ ] Lock-out unsupported methods
-- [ ] Option to load existing OCR into VoucherVision workflow
-- [X] Save/load VV settings
-- [X] LLM Cost Calculator
-- [ ] FAQs page
-- [X] Detect and display system hardware
-- [ ] Filename Prefix Handling (works, but needs more options and a GUI test)
-- [ ] Validation Tools
-    - [X] JSON formatting
-    - [X] World Flora Online
-    - [X] Wikipedia links
-    - [X] USDA GRIN links
-    - [X] Plants of the World Online links
-#### Supported LLM APIs
-- [x] OpenAI 
-    - [x] GPT 4
-    - [x] GPT 4 Turbo 1106-preview
-    - [x] GPT 4 Turbo 0125-preview
-    - [x] GPT 4 32k
-    - [x] GPT 3.5
-    - [x] GPT 3.5 Instruct
-- [x] OpenAI (Microsoft Azure Endpoints)
-    - [x] GPT 4
-    - [x] GPT 4 Turbo 1106-preview
-    - [x] GPT 4 Turbo 0125-preview
-    - [x] GPT 4 32k
-    - [x] GPT 3.5
-    - [x] GPT 3.5 Instruct
-- [x] MistralAI
-    - [x] Mistral Tiny
-    - [x] Mistral Small
-    - [x] Mistral Medium
-- [x] Google PaLM2
-    - [x] text-bison@001
-    - [x] text-bison@002
-    - [x] text-unicorn@001
-- [x] Google Gemini
-    - [x] Gemini-Pro
-- [x] LOCAL LLMs
-    - [x] GPU -- Mixtral 8x7B Instruct v0.1
-    - [x] GPU -- Mistral 7B Instruct v0.2
-    - [x] CPU -- Mistral 7B Instruct v0.2 GGUF
-#### Supported Locally Hosted LLMs
-- [x] MistralAI (24GB+ VRAM GPU Required)
-    - [x] Mixtral 8x7B Instruct v0.1
-    - [x] Mixtral 7B Instruct v0.2
-- [x] MistralAI (CPU Inference) ((can run on almost computer!))
-    - [x] Mixtral 7B Instruct v0.2 GGUF via llama.cpp
-- [x] Meta-Llama2 7B
-    - [ ] Llama2 7B chat hf 
+### VoucherVision Features
 
-#### VoucherVisionEditor
-- [X] Streamline the startup procedure
-- [ ] Add configurable dropdown menus for certain fields
-- [X] Make sure that VVE can accomodate arbitrary column names
-- [X] Remove legacy support (version 1 prompts)
-- [X] Taxonomy validation helper
-- [x] Visualize locations on a map (verbatim and decimal)
-- [x] More support for datum and verbatim coordinates
-- [ ] Compare raw OCR to values in form to flag hallucinations/generated content
-- [x] Accept zipped folders as input
-- [ ] Flag user when multiple people/names/determinations are present
+| Feature                            | Sub-features                                                                                         | Done      |
+|------------------------------------|------------------------------------------------------------------------------------------------------|-------------|
+| Location information redaction     |                                                                                                      | ✓         |
+| Update all GPT models              |                                                                                                      | ✓         |
+| Zip output files option            |                                                                                                      | ✓         |
+| Expense tracking                   | Dashboard<br>More granular GPT support<br>Project-based and cumulative tracking                      | ✓<br>✓<br>✓ |
+| Hugging Face Spaces                | Working and refactored<br>Unified with local version<br>Visualize locations on a map<br>Tested with 300 images<br>Optimize for +300 images | ✓<br>✓<br>✓<br>✓<br> |
+| Modular Prompt Builder             | Build, save, load, submit<br>Test column order<br>Standard prompts: long, medium, short<br>Test shorter prompt effectiveness | ✓<br><br>✓<br> |
+| API Availability Test/Visualization| Lock-out unsupported methods                                                                         | ✗         |
+| Load existing OCR                  |                                                                                                      | ✗         |
+| Save/load VV settings              |                                                                                                      | ✓         |
+| LLM Cost Calculator                |                                                                                                      | ✓         |
+| FAQs page                          |                                                                                                      | ✗       |
+| Detect and display hardware        |                                                                                                      | ✓         |
+| Filename Prefix Handling           | Needs more options and a GUI test                                                                    | ✗         |
+| Validation Tools                   | JSON formatting<br>World Flora Online<br>Wikipedia links<br>USDA GRIN links<br>Plants of the World Online links | ✓<br>✓<br>✓<br>✓<br>✓ |
+
+### Supported LLM APIs
+
+| API                        | Sub-versions                                                                                                      | Available      |
+|----------------------------|------------------------------------------------------------------------------------------------------------------|-------------|
+| OpenAI                     | GPT 4<br>GPT 4 Turbo 1106-preview<br>GPT 4 Turbo 0125-preview<br>GPT 4 32k<br>GPT 3.5<br>GPT 3.5 Instruct          | ✓<br>✓<br>✓<br>✓<br>✓<br>✓ |
+| OpenAI (Microsoft Azure)   | GPT 4<br>GPT 4 Turbo 1106-preview<br>GPT 4 Turbo 0125-preview<br>GPT 4 32k<br>GPT 3.5<br>GPT 3.5 Instruct          | ✓<br>✓<br>✓<br>✓<br>✓<br>✓ |
+| MistralAI                  | Mistral Tiny<br>Mistral Small<br>Mistral Medium                                                                   | ✓<br>✓<br>✓ |
+| Google PaLM2               | text-bison@001<br>text-bison@002<br>text-unicorn@001                                                              | ✓<br>✓<br>✓ |
+| Google Gemini              | Gemini-Pro                                                                                                        | ✓         |
+| Local LLMs                 | GPU Mixtral 8x7B Instruct v0.1<br>GPU Mistral 7B Instruct v0.2<br>CPU Mistral 7B Instruct v0.2 GGUF      | ✓<br>✓<br>✓ |
+
+### Supported Locally Hosted LLMs
+
+| LLM                        | Requirements              | Versions                                                                                   | Available   |
+|----------------------------|---------------------------|--------------------------------------------------------------------------------------------|-------------|
+| MistralAI                  | 24GB+ VRAM GPU            | Mixtral 8x7B Instruct v0.1<br>Mixtral 7B Instruct v0.2                                     | ✓<br>✓     |
+| MistralAI                  | CPU Inference             | Mixtral 7B Instruct v0.2 GGUF via llama.cpp                                                | ✓          |
+| Meta                       | 24GB+ VRAM GPU            | Base<br>Llama2 7B chat hf                                                                  | ✓<br>✗     |
+
+### VoucherVisionEditor
+| Feature                                                              | Done |
+|----------------------------------------------------------------------|--------|
+| Streamline the startup procedure                                     | ✗      |
+| Add configurable dropdown menus for certain fields                   | ✗      |
+| Make sure that VVE can accommodate arbitrary column names            | ✗      |
+| Remove legacy support (version 1 prompts)                            | ✗      |
+| Taxonomy validation helper                                           | ✓      |
+| Visualize locations on a map (verbatim and decimal)                  | ✓      |
+| More support for datum and verbatim coordinates                      | ✗      |
+| Compare raw OCR to values in form to flag hallucinations/generated content | ✗      |
+| Accept zipped folders as input                                       | ✓      |
+| Flag user when multiple people/names/determinations are present      | ✗      |
 
 ### **Package Information:**  
 The main VoucherVision tool and the VoucherVisionEditor are packaged separately. This separation ensures that lower-performance computers can still install and utilize the editor. While VoucherVision is optimized to function smoothly on virtually any modern system, maximizing its capabilities (like using LeafMachine2 label collages or running Retrieval Augmented Generation (RAG) prompts) mandates a GPU.
 
-> ***NOTE:*** You can absolutely run VoucherVision on computers that do not have a GPU, but the LeafMachine2 collage will run slower. 
+> ***NOTE:***  VoucherVision runs on computers that do not have a GPU, but the LeafMachine2 collage will run slower. 
 
 ---
 
