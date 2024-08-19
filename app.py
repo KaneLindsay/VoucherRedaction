@@ -356,14 +356,13 @@ def handle_image_upload_and_gallery():
 
         for input_file in os.listdir(st.session_state.config['leafmachine']['project']['dir_images_local']):
             if input_file.split('.')[1].lower() in ['jpg','jpeg']:
-                pass
+                print("What the heck............................................ bruh")
             elif input_file.split('.')[1].lower() in ['pdf',]:
                 has_pdf = True
                 # Handle PDF files
                 file_path = save_uploaded_file_local(st.session_state.config['leafmachine']['project']['dir_images_local'], st.session_state['dir_uploaded_images'], input_file)
                 # Convert each page of the PDF to an image
                 n_pages = convert_pdf_to_jpg(file_path, st.session_state['dir_uploaded_images'], dpi=200)#st.session_state.config['leafmachine']['project']['dir_images_local'])
-
             else:
                 pass
                 # st.warning("Inputs must be '.PDF' or '.jpg' or '.jpeg'")
@@ -1941,10 +1940,16 @@ def content_collage_overlay():
         st.markdown("Images that are mostly text (like a scanned notecard, or already cropped images) do not require LM2 collage.")
 
         if st.session_state.is_hf:
-            st.session_state.config['leafmachine']['use_RGB_label_images'] = st.checkbox(":rainbow[Use LeafMachine2 label collage for transcriptions]", st.session_state.config['leafmachine'].get('use_RGB_label_images', False), key='do make collage hf')
+            st.session_state.config['leafmachine']['use_RGB_label_images'] = st.checkbox(":rainbow[Use LeafMachine2 label collage for transcriptions]", st.session_state.config['leafmachine'].get('use_RGB_label_images', False), key='do make collage hf', disabled=st.session_state.redaction_config['enable_redaction'])
         else:
-            st.session_state.config['leafmachine']['use_RGB_label_images'] = st.checkbox(":rainbow[Use LeafMachine2 label collage for transcriptions]", st.session_state.config['leafmachine'].get('use_RGB_label_images', True), key='do make collage local')
+            st.session_state.config['leafmachine']['use_RGB_label_images'] = st.checkbox(":rainbow[Use LeafMachine2 label collage for transcriptions]", st.session_state.config['leafmachine'].get('use_RGB_label_images', True), key='do make collage local', disabled=st.session_state.redaction_config['enable_redaction'])
 
+        # If the user has enabled redaction, disable the content collage overlay checkbox
+        if st.session_state.redaction_config['enable_redaction']:
+            # Disable the Use LeafMachine2 label collage for transcriptions checkbox
+            st.session_state.config['leafmachine']['use_RGB_label_images'] = False
+            # Display a warning message
+            st.warning("Label collage not currently supported with redaction enabled. Please disable redaction to use the label collage feature.")
 
         option_selected_crops = st.multiselect(label="Components to crop",  
                 options=['ruler', 'barcode','label', 'colorcard','map','envelope','photo','attached_item','weights',
