@@ -610,9 +610,9 @@ class OCREngine:
         if granularity not in OCREngine.VALID_GRANULARITIES:
             raise ValueError(f"Invalid granularity '{granularity}'. Valid granularities are: {', '.join(OCREngine.VALID_GRANULARITIES)}")
         
-        image_copy = self.image.copy() # Copy the original image to draw on
-        draw = ImageDraw.Draw(image_copy)
-        width, height = image_copy.size
+        image_boxes = Image.open(self.path) # Copy the original image to draw on
+        draw = ImageDraw.Draw(image_boxes)
+        width, height = image_boxes.size
         text_to_box_mapping = getattr(self, f'{ocr_method}_text_to_box_mapping', [])
 
         if min([width, height]) > 4000:
@@ -643,7 +643,7 @@ class OCREngine:
                     width=line_width_thin
                 )
                 
-        return image_copy
+        return image_boxes
     
 
     def create_redacted_image(self):
@@ -652,7 +652,8 @@ class OCREngine:
         """
         self.logger.info("Drawing redaction boxes")
 
-        image_copy = self.image.copy()
+        image_redacted = Image.open(self.path)
+
         # self.OCR_option
         if 'normal' in self.OCR_option and 'hand' in self.OCR_option:
             # Merge normal boxes and hand boxes into a single list
@@ -665,7 +666,7 @@ class OCREngine:
             self.logger.warning("Did not draw redaction boxes as no Google OCR method is selected.")
             return
 
-        draw = ImageDraw.Draw(image_copy)
+        draw = ImageDraw.Draw(image_redacted)
 
         for element in text_to_box_mapping:
             if element["locational"] == 1:
@@ -681,10 +682,10 @@ class OCREngine:
                     outline=None,
                 )
 
-        self.image_redacted = image_copy
+        return image_redacted
 
 
-    def detect_text(self, handwritten:bool=False):
+    def detect_text_google(self, handwritten:bool=False):
         """
         Detect handwritten text in the image using Google Cloud Vision API
 
@@ -770,16 +771,9 @@ class OCREngine:
             return # Do not modify mapping if redactor is not provided
         self.logger.info(f"Classifying text for {ocr_option} OCR")
         for element in getattr(self, f"{ocr_option}_text_to_box_mapping", []):
-            print("Processing an OCR element...")
-            print("element granularity", element["granularity"], type(element["granularity"]))
-            print("redaction granularity", self.redaction_granularity, type(self.redaction_granularity))
             if element["granularity"] == self.redaction_granularity or self.redaction_granularity == "all":
                 classification, _ = self.redactor.classify(element["text"])
                 element["locational"] = classification
-                print(element)
-            else:
-                print("Skipping element as it does not match the redaction granularity")
-
 
     def process_image(self, do_create_OCR_helper_image:bool, logger:Logger) -> None:
         '''
@@ -852,17 +846,17 @@ class OCREngine:
 
         if 'normal' in self.OCR_option:
             if self.double_OCR:
-                part_OCR = self.OCR + "\nGoogle Printed OCR:\n" + self.detect_text()
+                part_OCR = self.OCR + "\nGoogle Printed OCR:\n" + self.detect_text_google()
                 self.OCR = self.OCR + part_OCR + part_OCR
             else:
-                self.OCR = self.OCR + "\nGoogle Printed OCR:\n" + self.detect_text()
+                self.OCR = self.OCR + "\nGoogle Printed OCR:\n" + self.detect_text_google()
 
         if 'hand' in self.OCR_option:
             if self.double_OCR:
-                part_OCR = self.OCR + "\nGoogle Handwritten OCR:\n" + self.detect_text(handwritten=True)
+                part_OCR = self.OCR + "\nGoogle Handwritten OCR:\n" + self.detect_text_google(handwritten=True)
                 self.OCR = self.OCR + part_OCR + part_OCR
             else:
-                self.OCR = self.OCR + "\nGoogle Handwritten OCR:\n" + self.detect_text(handwritten=True)
+                self.OCR = self.OCR + "\nGoogle Handwritten OCR:\n" + self.detect_text_google(handwritten=True)
 
             # Optionally add trOCR to the self.OCR for additional context
             if self.do_use_trOCR:
@@ -883,7 +877,7 @@ class OCREngine:
                 self.classify_text('normal')
             if 'hand' in self.OCR_option:
                 self.classify_text('hand')
-            self.create_redacted_image()
+            self.image_redacted = self.create_redacted_image()
 
     def create_ocr_helper_image(self):
         '''
